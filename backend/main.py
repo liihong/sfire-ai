@@ -8,11 +8,13 @@ import os
 from typing import Optional
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+import json as json_module
 
 from services.llm_service import LLMFactory
 
@@ -26,6 +28,15 @@ async def lifespan(app: FastAPI):
     # Startup
     print("🚀 火源文案智能体 Backend starting...")
     print(f"📦 Supported LLM models: {LLMFactory.get_supported_models()}")
+    # #region agent log
+    import os
+    log_dir = r"e:\project\sfire-ai\.cursor"
+    log_file = os.path.join(log_dir, "debug.log")
+    os.makedirs(log_dir, exist_ok=True)
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write('{"message":"Backend started","timestamp":' + str(__import__('time').time()*1000) + '}\n')
+    print(f"[DEBUG] Log file initialized at: {log_file}")
+    # #endregion
     yield
     # Shutdown
     print("👋 Backend shutting down...")
@@ -46,6 +57,70 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# #region agent log
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class DebugMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Log every incoming request
+        log_entry = json_module.dumps({
+            "location": "main.py:DebugMiddleware",
+            "message": "Incoming request",
+            "data": {
+                "method": request.method,
+                "path": str(request.url.path),
+                "query": str(request.url.query),
+                "content_type": request.headers.get("content-type", "none")
+            },
+            "timestamp": __import__('time').time() * 1000,
+            "sessionId": "debug-session"
+        })
+        print(f"[DEBUG] MIDDLEWARE: {log_entry}")
+        with open(r"e:\project\sfire-ai\.cursor\debug.log", "a", encoding="utf-8") as f:
+            f.write(log_entry + "\n")
+        
+        response = await call_next(request)
+        
+        # Log response status
+        print(f"[DEBUG] Response status: {response.status_code} for {request.url.path}")
+        return response
+
+app.add_middleware(DebugMiddleware)
+# #endregion
+
+# #region agent log
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Capture validation errors with full details for debugging."""
+    try:
+        body = await request.body()
+        body_str = body.decode('utf-8') if body else 'empty'
+    except:
+        body_str = 'could not read body'
+    
+    log_data = {
+        "location": "main.py:validation_exception_handler",
+        "message": "Request validation error",
+        "data": {
+            "errors": str(exc.errors()),
+            "body": body_str,
+            "url": str(request.url)
+        },
+        "timestamp": __import__('time').time() * 1000,
+        "sessionId": "debug-session",
+        "hypothesisId": "D,E"
+    }
+    print(f"[DEBUG] VALIDATION ERROR: {json_module.dumps(log_data)}")
+    log_entry = json_module.dumps(log_data)
+    with open(r"e:\project\sfire-ai\.cursor\debug.log", "a", encoding="utf-8") as f:
+        f.write(log_entry + "\n")
+    
+    return JSONResponse(
+        status_code=400,
+        content={"detail": exc.errors(), "body_received": body_str}
+    )
+# #endregion
 
 
 # ============== Request/Response Models ==============
@@ -127,6 +202,22 @@ async def health_check():
     return {"status": "healthy"}
 
 
+# #region agent log
+@app.get("/api/debug-test")
+async def debug_test():
+    """Test endpoint to verify logging works."""
+    import os
+    log_file = r"e:\project\sfire-ai\.cursor\debug.log"
+    try:
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write('{"message":"debug-test endpoint called","timestamp":' + str(__import__('time').time()*1000) + '}\n')
+        return {"status": "ok", "log_file": log_file, "message": "Log written successfully"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+# #endregion
+
+
 @app.get("/api/models")
 async def get_supported_models():
     """Get list of supported LLM models."""
@@ -157,6 +248,14 @@ async def generate_content(request: GenerateRequest):
     - **max_tokens**: Maximum length of generated content
     - **stream**: Enable streaming response (returns SSE)
     """
+    # #region agent log
+    import json
+    log_data = {"location":"main.py:generate_content","message":"Request received","data":{"prompt_len":len(request.prompt),"model_type":request.model_type,"temperature":request.temperature,"max_tokens":request.max_tokens,"stream":request.stream},"timestamp":__import__('time').time()*1000,"sessionId":"debug-session","hypothesisId":"B,E"}
+    print(f"[DEBUG] {json.dumps(log_data)}")
+    log_entry = json.dumps(log_data)
+    with open(r"e:\project\sfire-ai\.cursor\debug.log", "a", encoding="utf-8") as f:
+        f.write(log_entry + "\n")
+    # #endregion
     try:
         # Validate model type
         supported_models = LLMFactory.get_supported_models()

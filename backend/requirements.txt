@@ -1,23 +1,75 @@
+# ============================================================
 # 火源文案智能体 - Python Dependencies
-# Install: pip install -r requirements.txt
+# ============================================================
+# 
+# 项目依赖说明：
+#   - 本文件列出了后端服务所需的所有 Python 依赖包
+#   - 安装命令: pip install -r requirements.txt
+#   - 建议使用虚拟环境: python -m venv venv && venv\Scripts\activate (Windows)
+#                       python -m venv venv && source venv/bin/activate (Linux/Mac)
+#
+# ============================================================
 
-# Web Framework
+# ------------------------------------------------------------
+# Web Framework (Web 框架)
+# ------------------------------------------------------------
+# FastAPI: 高性能异步 Web 框架，支持自动生成 OpenAPI 文档
 fastapi>=0.109.0
+
+# Uvicorn: ASGI 服务器，用于运行 FastAPI 应用
+# [standard] 包含额外依赖如 websockets, httptools 等
 uvicorn[standard]>=0.27.0
 
-# HTTP Client
+# ------------------------------------------------------------
+# HTTP Client (HTTP 客户端)
+# ------------------------------------------------------------
+# httpx: 现代异步 HTTP 客户端，用于调用豆包 (火山引擎) API
+# 支持同步/异步请求、HTTP/2、连接池等特性
 httpx>=0.26.0
 
-# Environment Variables
+# ------------------------------------------------------------
+# AI/LLM SDK (AI 大模型 SDK)
+# ------------------------------------------------------------
+# OpenAI SDK: 用于调用 DeepSeek API (兼容 OpenAI 格式)
+# DeepSeek 采用 OpenAI 兼容的 API 格式，可直接使用 openai 库
+# 使用方法: 设置 base_url 为 DeepSeek 的 API 地址即可
+openai>=1.12.0
+
+# volcengine SDK: 火山引擎官方 SDK (可选，用于豆包)
+# 注意：本项目使用 httpx 直接调用豆包 API，此依赖为可选项
+# 如需使用官方 SDK，取消下行注释
+# volcengine>=1.0.0
+
+# ------------------------------------------------------------
+# Environment Variables (环境变量管理)
+# ------------------------------------------------------------
+# python-dotenv: 从 .env 文件加载环境变量
+# 用于管理 API 密钥等敏感配置信息
 python-dotenv>=1.0.0
 
-# Data Validation
+# ------------------------------------------------------------
+# Data Validation (数据验证)
+# ------------------------------------------------------------
+# Pydantic: 数据验证和设置管理库
+# FastAPI 使用 Pydantic 进行请求/响应数据验证
 pydantic>=2.5.0
 
-# Optional: Development Tools
+# ------------------------------------------------------------
+# Optional: Development Tools (开发工具 - 可选)
+# ------------------------------------------------------------
+# 取消注释以下行来安装开发依赖
+
+# pytest: Python 测试框架
 # pytest>=7.4.0
+
+# pytest-asyncio: pytest 的异步测试支持
 # pytest-asyncio>=0.23.0
+
+# black: Python 代码格式化工具
 # black>=24.1.0
+
+# ruff: 快速 Python linter，替代 flake8/pylint
 # ruff>=0.1.0
 
-
+# httpx[cli]: httpx 命令行工具，用于 API 调试
+# httpx[cli]>=0.26.0

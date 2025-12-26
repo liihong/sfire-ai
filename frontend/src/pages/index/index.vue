@@ -2,7 +2,7 @@
   <view class="container">
     <!-- 顶部标题栏 -->
     <view class="header">
-      <text class="header-title">小猫文案智能体</text>
+      <text class="header-title">火源文案智能体</text>
     </view>
 
     <!-- Banner 轮播图 -->
@@ -138,14 +138,14 @@ const bannerList = reactive([
 
 // 金刚区导航数据
 const navList = reactive([
-  { icon: '👥', label: 'IP问答型文案', bgColor: 'linear-gradient(135deg, #e0f4ff 0%, #c7ecff 100%)', route: '/pages/copywriting/qa' },
-  { icon: '💬', label: '高效口播文案', bgColor: 'linear-gradient(135deg, #e8ffe8 0%, #c1ffc1 100%)', route: '/pages/copywriting/oral' },
-  { icon: '🔥', label: '爆款选题创作', bgColor: 'linear-gradient(135deg, #fff4e0 0%, #ffe4b5 100%)', route: '/pages/copywriting/topic' },
-  { icon: '▶️', label: '爆款文案拆解', bgColor: 'linear-gradient(135deg, #f0e0ff 0%, #e0c0ff 100%)', route: '/pages/copywriting/analysis' },
-  { icon: '📝', label: '爆款文案仿写', bgColor: 'linear-gradient(135deg, #e0f0ff 0%, #b0d8ff 100%)', route: '/pages/copywriting/imitate' },
-  { icon: '🎵', label: '抖音热点文案', bgColor: 'linear-gradient(135deg, #ffe0e8 0%, #ffb0c8 100%)', route: '/pages/copywriting/douyin' },
-  { icon: '👍', label: '使用技巧', bgColor: 'linear-gradient(135deg, #fff0e0 0%, #ffd8a0 100%)', route: '/pages/tips' },
-  { icon: '⭐', label: '更多功能', bgColor: 'linear-gradient(135deg, #e8e8ff 0%, #d0d0ff 100%)', route: '/pages/more' }
+  { icon: '👥', label: 'IP问答型文案', bgColor: 'linear-gradient(135deg, #e0f4ff 0%, #c7ecff 100%)', route: '/pages/copywriting/index' },
+  { icon: '💬', label: '高效口播文案', bgColor: 'linear-gradient(135deg, #e8ffe8 0%, #c1ffc1 100%)', route: '/pages/copywriting/index' },
+  { icon: '🔥', label: '爆款选题创作', bgColor: 'linear-gradient(135deg, #fff4e0 0%, #ffe4b5 100%)', route: '/pages/copywriting/index' },
+  { icon: '▶️', label: '爆款文案拆解', bgColor: 'linear-gradient(135deg, #f0e0ff 0%, #e0c0ff 100%)', route: '/pages/copywriting/index' },
+  { icon: '📝', label: '爆款文案仿写', bgColor: 'linear-gradient(135deg, #e0f0ff 0%, #b0d8ff 100%)', route: '/pages/copywriting/index' },
+  { icon: '🎵', label: '抖音热点文案', bgColor: 'linear-gradient(135deg, #ffe0e8 0%, #ffb0c8 100%)', route: '/pages/copywriting/index' },
+  { icon: '👍', label: '使用技巧', bgColor: 'linear-gradient(135deg, #fff0e0 0%, #ffd8a0 100%)', route: '/pages/copywriting/index' },
+  { icon: '⭐', label: '更多功能', bgColor: 'linear-gradient(135deg, #e8e8ff 0%, #d0d0ff 100%)', route: '/pages/copywriting/index' }
 ])
 
 // 功能卡片数据
@@ -181,7 +181,7 @@ const avatarList = reactive([
 // 事件处理
 const handleNavClick = (item: any) => {
   console.log('导航点击:', item.label)
-  // uni.navigateTo({ url: item.route })
+  uni.navigateTo({ url: item.route })
 }
 
 const handleFeatureClick = (card: any) => {

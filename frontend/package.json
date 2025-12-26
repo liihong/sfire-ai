@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev:custom": "uni -p",
-    "dev:h5": "uni",
+    "dev:h5": "uni --host",
     "dev:h5:ssr": "uni --ssr",
     "dev:mp-alipay": "uni -p mp-alipay",
     "dev:mp-baidu": "uni -p mp-baidu",
@@ -53,6 +53,8 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-4080420251103001",
     "@dcloudio/uni-mp-xhs": "3.0.0-4080420251103001",
     "@dcloudio/uni-quickapp-webview": "3.0.0-4080420251103001",
+    "pinia": "^2.3.1",
+    "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.4.21",
     "vue-i18n": "^9.1.9"
   },
