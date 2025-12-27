@@ -153,10 +153,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
 import ModelSwitcher from '@/components/ModelSwitcher.vue'
 
 // 设置 store
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
 const currentModel = computed(() => settingsStore.currentModel)
 
 // ============== 状态定义 ==============
@@ -240,12 +242,8 @@ const temperatureLabel = computed(() => {
 
 // ============== API 配置 ==============
 
-// 后端 API 地址（根据实际情况修改）
-// #region agent log
-// 使用 127.0.0.1 替代 localhost 以避免某些环境下的解析问题
-const API_BASE_URL = 'http://127.0.0.1:8000'
-console.log('[DEBUG] API_BASE_URL:', API_BASE_URL)
-// #endregion
+// 后端 API 地址
+const API_BASE_URL = __API_BASE_URL__
 
 // ============== 方法定义 ==============
 
@@ -283,6 +281,10 @@ function onTemperatureChange(e: any) {
 async function generateCopywriting() {
   if (!canGenerate.value || isGenerating.value) return
   
+  // 登录检查
+  const loggedIn = await authStore.requireLogin()
+  if (!loggedIn) return
+  
   isGenerating.value = true
   generatedContent.value = ''
   
@@ -290,10 +292,8 @@ async function generateCopywriting() {
     // 获取当前选中的模型类型，确保有默认值
     let modelType = settingsStore.modelType
     
-    // #region agent log
     // 验证 modelType，如果无效则使用默认值
     if (!modelType || typeof modelType !== 'string' || !['deepseek', 'doubao'].includes(modelType)) {
-      console.warn('[DEBUG] Invalid modelType:', modelType, 'Using default: deepseek')
       modelType = 'deepseek'
     }
     
@@ -305,10 +305,6 @@ async function generateCopywriting() {
       max_tokens: maxTokens.value,
       stream: false
     }
-    console.log('[DEBUG] Request data:', JSON.stringify({modelType, modelTypeType: typeof modelType, requestData}, null, 2))
-    console.log('[DEBUG] Sending request to:', `${API_BASE_URL}/api/generate`)
-    fetch('http://127.0.0.1:7242/ingest/d0382972-9107-41fb-a8df-6b22b8de3d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'copywriting/index.vue:290',message:'Request data before sending',data:{modelType:modelType,modelTypeType:typeof modelType,fullRequestData:requestData,settingsStoreState:settingsStore.modelType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
-    // #endregion
     
     const response = await new Promise<UniApp.RequestSuccessCallbackResult>((resolve, reject) => {
       uni.request({
@@ -320,18 +316,9 @@ async function generateCopywriting() {
         timeout: 60000, // 60秒超时
         data: requestData,
         success: (res) => {
-          // #region agent log
-          console.log('[DEBUG] Response received:', JSON.stringify({statusCode: res.statusCode, data: res.data}, null, 2))
-          fetch('http://127.0.0.1:7242/ingest/d0382972-9107-41fb-a8df-6b22b8de3d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'copywriting/index.vue:312',message:'Response received',data:{statusCode:res.statusCode,responseData:res.data,responseHeaders:res.header},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D,E'})}).catch(()=>{});
-          // #endregion
           resolve(res)
         },
         fail: (err: any) => {
-          // #region agent log
-          console.log('[DEBUG] Request failed:', JSON.stringify(err, null, 2))
-          console.log('[DEBUG] Error details - errMsg:', err?.errMsg, 'errno:', err?.errno)
-          fetch('http://127.0.0.1:7242/ingest/d0382972-9107-41fb-a8df-6b22b8de3d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'copywriting/index.vue:320',message:'Request failed',data:{error:err,errMsg:err?.errMsg,errno:err?.errno},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D,E'})}).catch(()=>{});
-          // #endregion
           reject(new Error(err?.errMsg || 'Network request failed'))
         }
       })
@@ -339,15 +326,8 @@ async function generateCopywriting() {
     
     const result = response.data as any
     
-    // #region agent log
-    console.log('[DEBUG] Response status:', response.statusCode, 'Result:', JSON.stringify(result))
-    // #endregion
-    
     // 检查 HTTP 状态码
     if (response.statusCode !== 200) {
-      // #region agent log
-      console.log('[DEBUG] Non-200 status code:', response.statusCode, 'Body:', JSON.stringify(result))
-      // #endregion
       const errorMsg = result?.detail || result?.error || result?.body_received || `HTTP ${response.statusCode}`
       throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
     }

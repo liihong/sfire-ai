@@ -45,6 +45,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 // 功能类型定义
 interface FeatureItem {
@@ -101,7 +104,11 @@ const featureList = ref<FeatureItem[]>([
 ])
 
 // 点击功能卡片
-const handleFeatureClick = (item: FeatureItem) => {
+const handleFeatureClick = async (item: FeatureItem) => {
+  // 登录检查
+  const loggedIn = await authStore.requireLogin()
+  if (!loggedIn) return
+  
   uni.showToast({
     title: `即将开放：${item.title}`,
     icon: 'none',

@@ -183,6 +183,29 @@ class ErrorResponse(BaseModel):
     detail: Optional[str] = Field(default=None, description="Detailed error information")
 
 
+class LoginRequest(BaseModel):
+    """Login request model."""
+    code: str = Field(..., description="WeChat login code from uni.login")
+
+
+class UserInfo(BaseModel):
+    """User information model."""
+    openid: str = Field(..., description="User's unique identifier")
+    nickname: str = Field(..., description="User's nickname")
+    avatarUrl: str = Field(..., description="User's avatar URL")
+    gender: Optional[int] = Field(default=0, description="Gender: 0-unknown, 1-male, 2-female")
+    city: Optional[str] = Field(default="", description="City")
+    province: Optional[str] = Field(default="", description="Province")
+    country: Optional[str] = Field(default="", description="Country")
+
+
+class LoginResponse(BaseModel):
+    """Login response model."""
+    success: bool = Field(..., description="Whether login was successful")
+    token: str = Field(..., description="JWT token for authentication")
+    userInfo: UserInfo = Field(..., description="User information")
+
+
 # ============== API Endpoints ==============
 
 @app.get("/")
@@ -224,6 +247,141 @@ async def get_supported_models():
     return {
         "models": LLMFactory.get_supported_models(),
         "default": "deepseek"
+    }
+
+
+# ============== Auth Endpoints ==============
+
+@app.post(
+    "/api/auth/login",
+    response_model=LoginResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        500: {"model": ErrorResponse}
+    }
+)
+async def login(request: LoginRequest):
+    """
+    WeChat Mini Program Silent Login.
+    
+    Receives the code from uni.login() and returns a token with user info.
+    
+    **Note**: This is a Mock implementation for development.
+    In production, you should:
+    1. Call WeChat API with code to get session_key and openid
+    2. Generate a proper JWT token
+    3. Store user session in database
+    
+    - **code**: The login code from WeChat uni.login()
+    """
+    # #region agent log
+    log_data = {
+        "location": "main.py:login",
+        "message": "Login request received",
+        "data": {"code": request.code[:20] + "..." if len(request.code) > 20 else request.code},
+        "timestamp": __import__('time').time() * 1000,
+        "sessionId": "debug-session"
+    }
+    print(f"[DEBUG] {json_module.dumps(log_data)}")
+    with open(r"e:\project\sfire-ai\.cursor\debug.log", "a", encoding="utf-8") as f:
+        f.write(json_module.dumps(log_data) + "\n")
+    # #endregion
+    
+    try:
+        # ========== Mock Implementation ==========
+        # In production, replace this with actual WeChat API call:
+        # 
+        # import httpx
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.get(
+        #         "https://api.weixin.qq.com/sns/jscode2session",
+        #         params={
+        #             "appid": os.getenv("WECHAT_APP_ID"),
+        #             "secret": os.getenv("WECHAT_APP_SECRET"),
+        #             "js_code": request.code,
+        #             "grant_type": "authorization_code"
+        #         }
+        #     )
+        #     wx_data = response.json()
+        #     openid = wx_data.get("openid")
+        #     session_key = wx_data.get("session_key")
+        # 
+        # Then generate JWT token and store session in database
+        
+        # Mock: Generate fake openid from code
+        import hashlib
+        import time
+        
+        # Create a deterministic openid from code (for consistent testing)
+        code_hash = hashlib.md5(request.code.encode()).hexdigest()[:16]
+        mock_openid = f"o_mock_{code_hash}"
+        
+        # Generate mock token (in production, use proper JWT)
+        timestamp = int(time.time())
+        token_payload = f"{mock_openid}_{timestamp}"
+        mock_token = hashlib.sha256(token_payload.encode()).hexdigest()
+        
+        # Mock user info
+        mock_user_info = UserInfo(
+            openid=mock_openid,
+            nickname="火源用户",
+            avatarUrl="/static/default-avatar.png",
+            gender=0,
+            city="深圳",
+            province="广东",
+            country="中国"
+        )
+        
+        print(f"[Mock Login] Generated token for openid: {mock_openid}")
+        
+        return LoginResponse(
+            success=True,
+            token=mock_token,
+            userInfo=mock_user_info
+        )
+        
+    except Exception as e:
+        print(f"[ERROR] Login failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Login failed: {str(e)}"
+        )
+
+
+@app.get("/api/auth/user")
+async def get_current_user(request: Request):
+    """
+    Get current user information.
+    
+    Requires Authorization header with Bearer token.
+    Returns user info if token is valid.
+    """
+    # Get token from header
+    auth_header = request.headers.get("Authorization", "")
+    
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    token = auth_header[7:]  # Remove "Bearer " prefix
+    
+    if not token:
+        raise HTTPException(status_code=401, detail="Token is required")
+    
+    # ========== Mock Implementation ==========
+    # In production, verify JWT token and get user from database
+    
+    # For mock, just return a mock user
+    return {
+        "success": True,
+        "userInfo": {
+            "openid": "o_mock_user",
+            "nickname": "火源用户",
+            "avatarUrl": "/static/default-avatar.png",
+            "gender": 0,
+            "city": "深圳",
+            "province": "广东",
+            "country": "中国"
+        }
     }
 
 

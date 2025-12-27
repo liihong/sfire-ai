@@ -104,6 +104,9 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 // Banner 轮播数据
 const bannerList = reactive([
@@ -179,17 +182,29 @@ const avatarList = reactive([
 ])
 
 // 事件处理
-const handleNavClick = (item: any) => {
+const handleNavClick = async (item: any) => {
+  // 登录检查
+  const loggedIn = await authStore.requireLogin()
+  if (!loggedIn) return
+  
   console.log('导航点击:', item.label)
   uni.navigateTo({ url: item.route })
 }
 
-const handleFeatureClick = (card: any) => {
+const handleFeatureClick = async (card: any) => {
+  // 登录检查
+  const loggedIn = await authStore.requireLogin()
+  if (!loggedIn) return
+  
   console.log('功能卡片点击:', card.title)
   // uni.navigateTo({ url: card.route })
 }
 
-const handleAvatarClick = (avatar: any) => {
+const handleAvatarClick = async (avatar: any) => {
+  // 登录检查
+  const loggedIn = await authStore.requireLogin()
+  if (!loggedIn) return
+  
   console.log('数字人点击:', avatar.id)
 }
 </script>
