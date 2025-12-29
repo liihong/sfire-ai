@@ -189,9 +189,9 @@ const handleGetPhoneNumber = async (e: any) => {
             url: '/pages/login/profile'
           })
         } else {
-          // 老用户，跳转到IP操作台
+          // 老用户，跳转到首页
           uni.switchTab({
-            url: '/pages/project/list'
+            url: '/pages/index/index'
           })
         }
       }, 1500)
@@ -271,10 +271,10 @@ const mockLogin = () => {
     duration: 1500
   })
   
-  // 跳转到IP操作台
+  // 跳转到完善资料页（模拟新用户）
   setTimeout(() => {
-    uni.switchTab({
-      url: '/pages/project/list'
+    uni.redirectTo({
+      url: '/pages/login/profile'
     })
   }, 1500)
 }

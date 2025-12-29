@@ -310,8 +310,8 @@ async function generateCopywriting() {
     let modelType = settingsStore.modelType
     
     // 验证 modelType，如果无效则使用默认值
-    if (!modelType || typeof modelType !== 'string' || !['deepseek', 'doubao'].includes(modelType)) {
-      modelType = 'deepseek'
+    if (!modelType || typeof modelType !== 'string' || !['deepseek', 'doubao', 'claude'].includes(modelType)) {
+      modelType = 'claude'  // 默认使用 Claude
     }
     
     const requestData = {

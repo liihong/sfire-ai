@@ -3,6 +3,7 @@ LLM Service Module - Factory Pattern Implementation
 
 This module provides a unified interface for different LLM providers:
 - DeepSeek (OpenAI compatible format)
+- Claude (Anthropic API)
 - Doubao (Volcengine/火山引擎 API)
 """
 
@@ -172,6 +173,194 @@ class DeepSeekLLM(BaseLLM):
                             continue
 
 
+class ClaudeLLM(BaseLLM):
+    """
+    Claude LLM implementation supporting both Anthropic API and OpenAI-compatible proxies.
+    
+    API Documentation: https://docs.anthropic.com/en/api
+    
+    Supports:
+    - Official Anthropic API (api.anthropic.com)
+    - OpenAI-compatible proxy services (one-api, new-api, etc.)
+    """
+    
+    DEFAULT_BASE_URL = "https://api.anthropic.com"
+    DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
+    API_VERSION = "2023-06-01"
+    
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None
+    ):
+        super().__init__(api_key or os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY"))
+        self.base_url = base_url or os.getenv("CLAUDE_BASE_URL", self.DEFAULT_BASE_URL)
+        self.model = model or os.getenv("CLAUDE_MODEL", self.DEFAULT_MODEL)
+        # Check if using OpenAI-compatible format (env var or auto-detect)
+        self.use_openai_format = os.getenv("CLAUDE_USE_OPENAI_FORMAT", "").lower() in ("true", "1", "yes")
+        
+        if not self.api_key:
+            raise ValueError("Claude API key is required. Set CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable.")
+    
+    async def generate_text(self, prompt: str, **kwargs) -> str:
+        """
+        Generate text using Claude API (supports both Anthropic and OpenAI-compatible formats).
+        
+        Args:
+            prompt: The input prompt.
+            **kwargs: Additional parameters (temperature, max_tokens, etc.)
+            
+        Returns:
+            Generated text response.
+        """
+        # Detect API type
+        is_official_api = "api.anthropic.com" in self.base_url
+        use_openai_format = self.use_openai_format or (not is_official_api)
+        
+        # Build headers - proxy services use Bearer token
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # Add Anthropic-specific headers for official API
+        if is_official_api and not use_openai_format:
+            headers = {
+                "x-api-key": self.api_key,
+                "anthropic-version": self.API_VERSION,
+                "Content-Type": "application/json"
+            }
+        
+        # Normalize base URL (remove trailing slash)
+        base_url = self.base_url.rstrip("/")
+        
+        # Build payload based on format
+        if use_openai_format:
+            # OpenAI-compatible format (used by most proxy services)
+            messages = []
+            if "system_prompt" in kwargs and kwargs["system_prompt"]:
+                messages.append({"role": "system", "content": kwargs["system_prompt"]})
+            messages.append({"role": "user", "content": prompt})
+            
+            payload = {
+                "model": kwargs.get("model", self.model),
+                "messages": messages,
+                "temperature": kwargs.get("temperature", 0.7),
+                "max_tokens": kwargs.get("max_tokens", 2048),
+                "stream": False
+            }
+            url = f"{base_url}/v1/chat/completions"
+        else:
+            # Native Anthropic format
+            payload = {
+                "model": kwargs.get("model", self.model),
+                "max_tokens": kwargs.get("max_tokens", 2048),
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            if "temperature" in kwargs:
+                payload["temperature"] = kwargs["temperature"]
+            if "system_prompt" in kwargs and kwargs["system_prompt"]:
+                payload["system"] = kwargs["system_prompt"]
+            url = f"{base_url}/v1/messages"
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Parse response based on format
+            if use_openai_format:
+                # OpenAI format: {"choices": [{"message": {"content": "..."}}]}
+                return data["choices"][0]["message"]["content"]
+            else:
+                # Anthropic format: {"content": [{"type": "text", "text": "..."}]}
+                content_blocks = data.get("content", [])
+                return "".join(block.get("text", "") for block in content_blocks if block.get("type") == "text")
+    
+    async def generate_stream(self, prompt: str, **kwargs) -> AsyncGenerator[str, None]:
+        """
+        Generate text in streaming mode using Claude API (supports both formats).
+        
+        Args:
+            prompt: The input prompt.
+            **kwargs: Additional parameters.
+            
+        Yields:
+            Generated text chunks.
+        """
+        import json
+        
+        # Detect API type
+        is_official_api = "api.anthropic.com" in self.base_url
+        use_openai_format = self.use_openai_format or (not is_official_api)
+        
+        # Build headers
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        if is_official_api and not use_openai_format:
+            headers = {
+                "x-api-key": self.api_key,
+                "anthropic-version": self.API_VERSION,
+                "Content-Type": "application/json"
+            }
+        
+        # Build payload based on format
+        if use_openai_format:
+            messages = []
+            if "system_prompt" in kwargs and kwargs["system_prompt"]:
+                messages.append({"role": "system", "content": kwargs["system_prompt"]})
+            messages.append({"role": "user", "content": prompt})
+            
+            payload = {
+                "model": kwargs.get("model", self.model),
+                "messages": messages,
+                "temperature": kwargs.get("temperature", 0.7),
+                "max_tokens": kwargs.get("max_tokens", 2048),
+                "stream": True
+            }
+            url = f"{self.base_url}/v1/chat/completions"
+        else:
+            payload = {
+                "model": kwargs.get("model", self.model),
+                "max_tokens": kwargs.get("max_tokens", 2048),
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": True
+            }
+            if "temperature" in kwargs:
+                payload["temperature"] = kwargs["temperature"]
+            if "system_prompt" in kwargs and kwargs["system_prompt"]:
+                payload["system"] = kwargs["system_prompt"]
+            url = f"{self.base_url}/v1/messages"
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream("POST", url, headers=headers, json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data = line[6:]
+                        if data == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data)
+                            if use_openai_format:
+                                # OpenAI format
+                                content = chunk["choices"][0]["delta"].get("content", "")
+                                if content:
+                                    yield content
+                            else:
+                                # Anthropic format
+                                if chunk.get("type") == "content_block_delta":
+                                    text = chunk.get("delta", {}).get("text", "")
+                                    if text:
+                                        yield text
+                        except (json.JSONDecodeError, KeyError, IndexError):
+                            continue
+
+
 class DoubaoLLM(BaseLLM):
     """
     Doubao (豆包) LLM implementation using Volcengine (火山引擎) API.
@@ -304,6 +493,7 @@ class LLMFactory:
     _registry: Dict[str, type] = {
         "deepseek": DeepSeekLLM,
         "doubao": DoubaoLLM,
+        "claude": ClaudeLLM,
     }
     
     @classmethod

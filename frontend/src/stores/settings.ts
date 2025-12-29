@@ -48,7 +48,7 @@ export const MODEL_LIST: ModelConfig[] = [
     name: 'Claude',
     icon: '🎭',
     description: 'Anthropic Claude',
-    available: false  // 预留，暂不可用
+    available: true  // 预留，暂不可用
   }
 ]
 
@@ -62,7 +62,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // ============== State ==============
   
   // 当前选中的模型类型
-  const modelType = ref<ModelType>('deepseek')
+  const modelType = ref<ModelType>('claude')
   
   // ============== Getters ==============
   
@@ -133,7 +133,7 @@ export const useSettingsStore = defineStore('settings', () => {
    * 重置设置到默认值
    */
   function resetSettings() {
-    modelType.value = 'deepseek'
+    modelType.value = 'claude'
     saveToStorage()
   }
   
