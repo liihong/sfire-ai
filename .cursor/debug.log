@@ -1,8 +1,32 @@
-
-{"message":"Backend started","timestamp":1766981233272.7778}
-{"location": "main.py:DebugMiddleware", "message": "Incoming request", "data": {"method": "GET", "path": "/api/projects", "query": "", "content_type": "application/json"}, "timestamp": 1766981233414.4133, "sessionId": "debug-session"}
-{"location": "main.py:DebugMiddleware", "message": "Incoming request", "data": {"method": "GET", "path": "/api/projects", "query": "", "content_type": "application/json"}, "timestamp": 1766981248780.8281, "sessionId": "debug-session"}
-{"location": "main.py:DebugMiddleware", "message": "Incoming request", "data": {"method": "GET", "path": "/api/projects", "query": "", "content_type": "application/json"}, "timestamp": 1766981290538.3967, "sessionId": "debug-session"}
-{"message":"Backend started","timestamp":1766981353633.1985}
-{"message":"Backend started","timestamp":1766981360215.7463}
-{"location": "main.py:DebugMiddleware", "message": "Incoming request", "data": {"method": "GET", "path": "/api/projects", "query": "", "content_type": "application/json"}, "timestamp": 1766981490496.25, "sessionId": "debug-session"}
+{"location":"main.py:middleware","message":"Request received at FastAPI","data":{"method":"GET","path":"/health","url":"http://localhost:8000/health"},"timestamp":1766990767013,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"main.py:middleware","message":"Response sent","data":{"status":200,"path":"/health"},"timestamp":1766990767014,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"main.py:middleware","message":"Request received at FastAPI","data":{"method":"GET","path":"/api/projects","url":"http://localhost:8000/api/projects"},"timestamp":1766990860943,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"project.py:54","message":"list_projects endpoint HIT","data":{},"timestamp":1766990860944,"sessionId":"debug-session","hypothesisId":"H1"}
+{"location":"project.py:59","message":"Got user_id","data":{"user_id":"user_1595bb98611f1623"},"timestamp":1766990860953,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:64","message":"Got projects from DB","data":{"count":1},"timestamp":1766990860953,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:68","message":"Returning response","data":{"active_project_id":"ded33f85-bb8d-4097-9cc1-888368a09f66"},"timestamp":1766990860953,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"main.py:middleware","message":"Response sent","data":{"status":200,"path":"/api/projects"},"timestamp":1766990860954,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"main.py:middleware","message":"Request received at FastAPI","data":{"method":"GET","path":"/api/projects","url":"http://localhost:8000/api/projects"},"timestamp":1766990861001,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"project.py:54","message":"list_projects endpoint HIT","data":{},"timestamp":1766990861002,"sessionId":"debug-session","hypothesisId":"H1"}
+{"location":"project.py:59","message":"Got user_id","data":{"user_id":"user_1595bb98611f1623"},"timestamp":1766990861002,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:64","message":"Got projects from DB","data":{"count":1},"timestamp":1766990861002,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:68","message":"Returning response","data":{"active_project_id":"ded33f85-bb8d-4097-9cc1-888368a09f66"},"timestamp":1766990861002,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"main.py:middleware","message":"Response sent","data":{"status":200,"path":"/api/projects"},"timestamp":1766990861002,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"main.py:middleware","message":"Request received at FastAPI","data":{"method":"GET","path":"/api/projects","url":"http://localhost:8000/api/projects"},"timestamp":1766991604454,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"project.py:54","message":"list_projects endpoint HIT","data":{},"timestamp":1766991604455,"sessionId":"debug-session","hypothesisId":"H1"}
+{"location":"project.py:59","message":"Got user_id","data":{"user_id":"user_1595bb98611f1623"},"timestamp":1766991604455,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:64","message":"Got projects from DB","data":{"count":1},"timestamp":1766991604455,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:68","message":"Returning response","data":{"active_project_id":"ded33f85-bb8d-4097-9cc1-888368a09f66"},"timestamp":1766991604456,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"main.py:middleware","message":"Response sent","data":{"status":200,"path":"/api/projects"},"timestamp":1766991604456,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"main.py:middleware","message":"Request received at FastAPI","data":{"method":"GET","path":"/api/projects","url":"http://localhost:8000/api/projects"},"timestamp":1766992187901,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"project.py:54","message":"list_projects endpoint HIT","data":{},"timestamp":1766992187901,"sessionId":"debug-session","hypothesisId":"H1"}
+{"location":"project.py:59","message":"Got user_id","data":{"user_id":"user_1595bb98611f1623"},"timestamp":1766992187901,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:64","message":"Got projects from DB","data":{"count":1},"timestamp":1766992187902,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:68","message":"Returning response","data":{"active_project_id":"ded33f85-bb8d-4097-9cc1-888368a09f66"},"timestamp":1766992187902,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"main.py:middleware","message":"Response sent","data":{"status":200,"path":"/api/projects"},"timestamp":1766992187902,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"main.py:middleware","message":"Request received at FastAPI","data":{"method":"GET","path":"/api/projects","url":"http://localhost:8000/api/projects"},"timestamp":1766994004943,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}
+{"location":"project.py:54","message":"list_projects endpoint HIT","data":{},"timestamp":1766994004945,"sessionId":"debug-session","hypothesisId":"H1"}
+{"location":"project.py:59","message":"Got user_id","data":{"user_id":"user_1595bb98611f1623"},"timestamp":1766994004945,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:64","message":"Got projects from DB","data":{"count":1},"timestamp":1766994004945,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"project.py:68","message":"Returning response","data":{"active_project_id":"ded33f85-bb8d-4097-9cc1-888368a09f66"},"timestamp":1766994004945,"sessionId":"debug-session","hypothesisId":"H3"}
+{"location":"main.py:middleware","message":"Response sent","data":{"status":200,"path":"/api/projects"},"timestamp":1766994004946,"sessionId":"debug-session","hypothesisId":"H1-MIDDLEWARE"}

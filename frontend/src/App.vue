@@ -146,4 +146,7 @@ page {
   background-color: #f5f5f5;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
+page, view, text, scroll-view, swiper, button, input, textarea, label, navigator, image {
+  box-sizing: border-box;
+}
 </style>

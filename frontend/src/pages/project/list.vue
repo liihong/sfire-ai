@@ -25,7 +25,7 @@
         <view class="empty-icon">🚀</view>
         <text class="empty-title">还没有项目</text>
         <text class="empty-desc">创建你的第一个 IP 项目，开启智能创作之旅</text>
-        <view class="empty-action" @tap="showCreateModal = true">
+        <view class="empty-action" @tap="navigateToCreate">
           <text class="action-text">立即创建</text>
         </view>
       </view>
@@ -85,7 +85,7 @@
 
     <!-- 底部创建按钮 -->
     <view class="create-btn-wrapper">
-      <view class="create-btn" @tap="showCreateModal = true">
+      <view class="create-btn" @tap="navigateToCreate">
         <view class="btn-glow"></view>
         <view class="btn-content">
           <text class="btn-icon">✨</text>
@@ -223,6 +223,13 @@ async function handleSelectProject(project: Project) {
 function handleEditProject(project: Project) {
   uni.navigateTo({
     url: `/pages/project/dashboard?id=${project.id}&edit=true`
+  })
+}
+
+// 跳转到创建页面
+function navigateToCreate() {
+  uni.navigateTo({
+    url: '/pages/project/create'
   })
 }
 

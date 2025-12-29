@@ -34,8 +34,8 @@ const currentModel = computed(() => settingsStore.currentModel)
 
 // 位置状态
 const position = reactive({
-  x: 32, // 距离右边
-  y: 200 // 距离底部
+  x: 16, // 距离右边
+  y: 280 // 距离底部
 })
 
 // 拖拽状态
@@ -111,7 +111,7 @@ function onTouchMove(e: TouchEvent) {
   const deltaY = (touchStart.y - touch.clientY) * scale
   
   // 更新位置，限制在屏幕范围内
-  const ballSize = 100 // 球的大小
+  const ballSize = 80 // 球的大小
   const margin = 16 // 边距
   
   position.x = Math.max(margin, Math.min(screenInfo.width - ballSize - margin, touchStart.posX + deltaX))
@@ -136,9 +136,9 @@ function onTouchEnd() {
   
   // 根据当前位置决定吸附到左边还是右边
   if (ballCenterX < centerX) {
-    position.x = screenInfo.width - 100 - 16 // 吸附到左边
+    position.x = screenInfo.width - 80 - 16 // 吸附到左边
   } else {
-    position.x = 32 // 吸附到右边
+    position.x = 16 // 吸附到右边
   }
 }
 
@@ -175,16 +175,22 @@ function showModelPicker() {
 .model-switcher {
   position: fixed;
   z-index: 9999;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+  
+  &:active {
+    opacity: 1;
+  }
   
   .switcher-ball {
-    width: 100rpx;
-    height: 100rpx;
+    width: 80rpx;
+    height: 80rpx;
     border-radius: 50%;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 243, 248, 0.95));
     box-shadow: 
-      0 8rpx 32rpx rgba(0, 0, 0, 0.12),
-      0 2rpx 8rpx rgba(0, 0, 0, 0.08),
-      inset 0 -2rpx 6rpx rgba(0, 0, 0, 0.04);
+      0 6rpx 24rpx rgba(0, 0, 0, 0.12),
+      0 2rpx 6rpx rgba(0, 0, 0, 0.08),
+      inset 0 -2rpx 4rpx rgba(0, 0, 0, 0.04);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -195,7 +201,7 @@ function showModelPicker() {
     &::before {
       content: '';
       position: absolute;
-      inset: -4rpx;
+      inset: -3rpx;
       border-radius: 50%;
       background: linear-gradient(145deg, #4facfe, #00f2fe);
       opacity: 0.3;
@@ -207,8 +213,8 @@ function showModelPicker() {
     &.is-dragging {
       transform: scale(1.1);
       box-shadow: 
-        0 12rpx 40rpx rgba(79, 172, 254, 0.35),
-        0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+        0 10rpx 32rpx rgba(79, 172, 254, 0.35),
+        0 3rpx 10rpx rgba(0, 0, 0, 0.1);
       
       &::before {
         opacity: 0.5;
@@ -216,16 +222,16 @@ function showModelPicker() {
     }
     
     .ball-icon {
-      font-size: 48rpx;
+      font-size: 40rpx;
       z-index: 1;
     }
     
     .ball-indicator {
       position: absolute;
-      top: 8rpx;
-      right: 8rpx;
-      width: 16rpx;
-      height: 16rpx;
+      top: 6rpx;
+      right: 6rpx;
+      width: 14rpx;
+      height: 14rpx;
       background: linear-gradient(135deg, #43e97b, #38f9d7);
       border-radius: 50%;
       border: 2rpx solid #fff;
@@ -235,13 +241,13 @@ function showModelPicker() {
   
   .model-tooltip {
     position: absolute;
-    right: 120rpx;
+    right: 100rpx;
     top: 50%;
     transform: translateY(-50%);
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(10px);
-    padding: 12rpx 24rpx;
-    border-radius: 20rpx;
+    padding: 10rpx 20rpx;
+    border-radius: 16rpx;
     white-space: nowrap;
     animation: fadeIn 0.3s ease-out;
     
@@ -249,15 +255,15 @@ function showModelPicker() {
     &::after {
       content: '';
       position: absolute;
-      right: -12rpx;
+      right: -10rpx;
       top: 50%;
       transform: translateY(-50%);
-      border: 6rpx solid transparent;
+      border: 5rpx solid transparent;
       border-left-color: rgba(0, 0, 0, 0.75);
     }
     
     .tooltip-text {
-      font-size: 24rpx;
+      font-size: 22rpx;
       color: #ffffff;
       font-weight: 500;
     }
