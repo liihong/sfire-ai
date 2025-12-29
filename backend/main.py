@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import json as json_module
 
 from services.llm_service import LLMFactory
+from routers.project import router as project_router
 
 # Load environment variables
 load_dotenv()
@@ -57,6 +58,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(project_router)
 
 # #region agent log
 from starlette.middleware.base import BaseHTTPMiddleware

@@ -95,8 +95,10 @@ function responseInterceptor<T>(response: UniApp.RequestSuccessCallbackResult): 
     const authStore = useAuthStore()
     authStore.clearAuth()
     
-    // 可以在这里触发重新登录
-    console.warn('Token expired, need re-login')
+    // 跳转到登录页面
+    uni.navigateTo({
+      url: '/pages/login/index'
+    })
     
     return {
       success: false,

@@ -5,7 +5,14 @@
       <view class="header-left" @tap="goBack">
         <text class="back-icon">←</text>
       </view>
-      <text class="header-title">AI 文案生成</text>
+      <view class="header-center">
+        <text class="header-title">AI 文案生成</text>
+        <!-- 当前项目指示器 -->
+        <view class="project-indicator" v-if="activeProject" @tap="goToProjectDashboard">
+          <view class="indicator-dot" :style="{ background: activeProject.avatar_color }"></view>
+          <text class="indicator-name">{{ activeProject.name }}</text>
+        </view>
+      </view>
       <view class="header-right">
         <view class="model-badge" @tap="showModelInfo">
           <text class="model-icon">{{ currentModel.icon }}</text>
@@ -154,12 +161,15 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
+import { useProjectStore } from '@/stores/project'
 import ModelSwitcher from '@/components/ModelSwitcher.vue'
 
 // 设置 store
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
+const projectStore = useProjectStore()
 const currentModel = computed(() => settingsStore.currentModel)
+const activeProject = computed(() => projectStore.activeProject)
 
 // ============== 状态定义 ==============
 
@@ -256,6 +266,13 @@ function goBack() {
       uni.switchTab({ url: '/pages/index/index' })
     }
   })
+}
+
+/**
+ * 进入项目控制台
+ */
+function goToProjectDashboard() {
+  uni.navigateTo({ url: '/pages/project/dashboard' })
 }
 
 /**
@@ -359,6 +376,7 @@ async function generateCopywriting() {
 
 /**
  * 获取系统提示词
+ * 结合选中的风格和当前项目的人设配置
  */
 function getSystemPrompt(): string {
   const stylePrompts: Record<string, string> = {
@@ -411,7 +429,15 @@ function getSystemPrompt(): string {
 5. 体现专业深度和洞察`
   }
   
-  return stylePrompts[selectedStyle.value] || stylePrompts['营销']
+  let basePrompt = stylePrompts[selectedStyle.value] || stylePrompts['营销']
+  
+  // 注入项目人设上下文
+  const personaContext = projectStore.getPersonaSystemPrompt()
+  if (personaContext) {
+    basePrompt = `${personaContext}\n\n---\n\n${basePrompt}`
+  }
+  
+  return basePrompt
 }
 
 /**
@@ -480,10 +506,41 @@ function formatTime(date: Date): string {
     }
   }
   
+  .header-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4rpx;
+  }
+  
   .header-title {
     font-size: 34rpx;
     font-weight: 600;
     color: #1a1a2e;
+  }
+  
+  .project-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 4rpx 12rpx;
+    background: #f8faff;
+    border-radius: 16rpx;
+    
+    .indicator-dot {
+      width: 12rpx;
+      height: 12rpx;
+      border-radius: 50%;
+    }
+    
+    .indicator-name {
+      font-size: 20rpx;
+      color: #666;
+      max-width: 120rpx;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
   
   .header-right {

@@ -3,6 +3,15 @@
     <!-- 顶部标题栏 -->
     <view class="header">
       <text class="header-title">火源文案智能体</text>
+      <!-- 项目切换入口 -->
+      <view class="project-entry" @tap="goToProjectDashboard" v-if="authStore.isLoggedIn">
+        <view class="project-avatar" v-if="activeProject" :style="{ background: activeProject.avatar_color }">
+          <text class="avatar-letter">{{ activeProject.avatar_letter || activeProject.name[0] }}</text>
+        </view>
+        <text class="project-name" v-if="activeProject">{{ activeProject.name }}</text>
+        <text class="project-hint" v-else>选择项目</text>
+        <text class="entry-arrow">›</text>
+      </view>
     </view>
 
     <!-- Banner 轮播图 -->
@@ -103,10 +112,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useProjectStore } from '@/stores/project'
 
 const authStore = useAuthStore()
+const projectStore = useProjectStore()
+const activeProject = computed(() => projectStore.activeProject)
+
+// 初始化时加载项目
+onMounted(() => {
+  if (authStore.isLoggedIn) {
+    projectStore.fetchProjects()
+  }
+})
+
+// 进入项目控制台
+function goToProjectDashboard() {
+  if (activeProject.value) {
+    uni.navigateTo({ url: '/pages/project/dashboard' })
+  } else {
+    uni.navigateTo({ url: '/pages/project/list' })
+  }
+}
 
 // Banner 轮播数据
 const bannerList = reactive([
@@ -220,7 +248,7 @@ const handleAvatarClick = async (avatar: any) => {
 .header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: 24rpx 32rpx;
   background: #ffffff;
   
@@ -229,6 +257,54 @@ const handleAvatarClick = async (avatar: any) => {
     font-weight: 600;
     color: #4facfe;
     letter-spacing: 2rpx;
+  }
+  
+  .project-entry {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 12rpx 20rpx;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0ff 100%);
+    border-radius: 32rpx;
+    
+    &:active {
+      opacity: 0.8;
+    }
+    
+    .project-avatar {
+      width: 40rpx;
+      height: 40rpx;
+      border-radius: 12rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      .avatar-letter {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: #fff;
+      }
+    }
+    
+    .project-name {
+      font-size: 24rpx;
+      font-weight: 500;
+      color: #3B82F6;
+      max-width: 120rpx;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .project-hint {
+      font-size: 24rpx;
+      color: #999;
+    }
+    
+    .entry-arrow {
+      font-size: 28rpx;
+      color: #999;
+    }
   }
 }
 

@@ -38,6 +38,18 @@ export const useAuthStore = defineStore('auth', () => {
   // 登录状态
   const isLoggedIn = computed(() => !!token.value)
   
+  // 是否有 Token（用于路由拦截）
+  const hasToken = computed(() => {
+    // 优先检查内存中的 token
+    if (token.value) return true
+    // 再检查本地存储
+    try {
+      return !!uni.getStorageSync(TOKEN_KEY)
+    } catch {
+      return false
+    }
+  })
+  
   // ============== Actions ==============
   
   /**
@@ -160,36 +172,23 @@ export const useAuthStore = defineStore('auth', () => {
   loadFromStorage()
   
   /**
-   * 检查是否需要登录，未登录时自动触发登录流程
-   * @param showTip 是否显示提示（默认 true）
+   * 检查是否需要登录，未登录时跳转到登录页面
+   * @param redirectToLogin 未登录时是否跳转登录页（默认 true）
    * @returns 是否已登录
    */
-  async function requireLogin(showTip: boolean = true): Promise<boolean> {
+  async function requireLogin(redirectToLogin: boolean = true): Promise<boolean> {
     if (isLoggedIn.value) {
       return true
     }
     
-    // 未登录，显示提示并尝试静默登录
-    if (showTip) {
-      uni.showToast({
-        title: '请先登录',
-        icon: 'none',
-        duration: 1500
+    // 未登录，直接跳转到登录页面
+    if (redirectToLogin) {
+      uni.navigateTo({
+        url: '/pages/login/index'
       })
     }
     
-    // 尝试静默登录
-    const loginSuccess = await silentLogin()
-    
-    if (!loginSuccess && showTip) {
-      uni.showToast({
-        title: '登录失败，请重试',
-        icon: 'none',
-        duration: 2000
-      })
-    }
-    
-    return loginSuccess
+    return false
   }
   
   return {
@@ -199,6 +198,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // Getters
     isLoggedIn,
+    hasToken,
     
     // Actions
     setToken,
