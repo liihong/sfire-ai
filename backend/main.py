@@ -19,6 +19,7 @@ import json as json_module
 from services.llm_service import LLMFactory
 from routers.project import router as project_router
 from routers.tikhub import router as tikhub_router
+from routers.generation import router as generation_router
 
 # Load environment variables
 load_dotenv()
@@ -54,6 +55,7 @@ app.add_middleware(
 # Include routers
 app.include_router(project_router)
 app.include_router(tikhub_router)
+app.include_router(generation_router)
 
 
 # ============== Request/Response Models ==============

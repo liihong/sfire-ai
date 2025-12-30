@@ -1,258 +1,357 @@
 <template>
-  <view class="copywriting-page">
-    <!-- 顶部标题栏 -->
-    <view class="page-header">
-      <view class="header-left" @tap="goBack">
-        <text class="back-icon">←</text>
+  <view class="chat-page">
+    <!-- 顶部导航栏 -->
+    <view class="nav-header">
+      <view class="nav-left" @tap="goBack">
+        <text class="back-icon">‹</text>
       </view>
-      <view class="header-center">
-        <text class="header-title">AI 文案生成</text>
-        <!-- 当前项目指示器 -->
-        <view class="project-indicator" v-if="activeProject" @tap="goToProjectDashboard">
-          <view class="indicator-dot" :style="{ background: activeProject.avatar_color }"></view>
-          <text class="indicator-name">{{ activeProject.name }}</text>
+      <view class="nav-center">
+        <text class="nav-title">{{ currentAgent.name }}</text>
+        <view class="agent-tag">
+          <text class="tag-dot"></text>
+          <text class="tag-text">AI 创作助手</text>
         </view>
       </view>
-      <view class="header-right">
-        <view class="model-badge" @tap="showModelInfo">
+      <view class="nav-right">
+        <view class="model-chip" @tap="showModelPicker">
           <text class="model-icon">{{ currentModel.icon }}</text>
-          <text class="model-name">{{ currentModel.name }}</text>
+          <text class="model-text">{{ currentModel.name }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 主体内容区 -->
-    <scroll-view class="main-content" scroll-y :scroll-into-view="scrollIntoView">
-      <!-- 风格选择 -->
-      <view class="style-section">
-        <view class="section-title">
-          <text class="title-text">选择文案风格</text>
-        </view>
-        <view class="style-grid">
-          <view 
-            v-for="(style, index) in styleList" 
-            :key="index"
-            class="style-item"
-            :class="{ active: selectedStyle === style.value }"
-            @tap="selectedStyle = style.value"
-          >
-            <text class="style-icon">{{ style.icon }}</text>
-            <text class="style-label">{{ style.label }}</text>
+    <!-- 聊天消息区域 -->
+    <scroll-view 
+      class="chat-container"
+      scroll-y
+      :scroll-top="scrollTop"
+      :scroll-with-animation="true"
+      @scrolltoupper="onScrollToUpper"
+    >
+      <!-- IP 档案卡片 (系统消息) -->
+      <view class="system-card" v-if="activeProject && ipCardMessage">
+        <view class="card-header">
+          <view class="card-avatar" :style="{ background: activeProject.avatar_color }">
+            <text class="avatar-letter">{{ activeProject.avatar_letter }}</text>
           </view>
+          <view class="card-title-group">
+            <text class="card-title">{{ activeProject.name }}</text>
+            <text class="card-subtitle">IP 档案 · AI 已就位</text>
+          </view>
+          <view class="card-status">
+            <view class="status-pulse"></view>
+            <text class="status-text">在线</text>
+          </view>
+        </view>
+        <view class="card-body">
+          <view class="info-row">
+            <text class="info-label">🤖 当前智能体</text>
+            <text class="info-value agent-value">{{ currentAgent.name }}</text>
+          </view>
+          <view class="info-row" v-if="activeProject.industry">
+            <text class="info-label">🏷️ 行业领域</text>
+            <text class="info-value">{{ activeProject.industry }}</text>
+          </view>
+          <view class="info-row" v-if="currentPersonaSettings.tone">
+            <text class="info-label">🎭 风格标签</text>
+            <text class="info-value">{{ formatStyleTags(currentPersonaSettings.tone) }}</text>
+          </view>
+          <view class="info-row" v-if="currentPersonaSettings.target_audience">
+            <text class="info-label">👥 目标受众</text>
+            <text class="info-value">{{ currentPersonaSettings.target_audience }}</text>
+          </view>
+        </view>
+        <view class="card-footer">
+          <text class="footer-hint">🎯 准备就绪，请告诉我你想拍什么？</text>
         </view>
       </view>
 
-      <!-- 输入区域 -->
-      <view class="input-section">
-        <view class="section-title">
-          <text class="title-text">输入文案主题</text>
-          <text class="title-hint">描述越详细，生成效果越好</text>
-        </view>
-        <view class="input-wrapper">
-          <textarea 
-            v-model="inputTopic"
-            class="topic-input"
-            :placeholder="placeholderText"
-            :maxlength="500"
-            :auto-height="true"
-            :show-confirm-bar="false"
-          />
-          <view class="input-footer">
-            <text class="char-count">{{ inputTopic.length }}/500</text>
-          </view>
-        </view>
+      <!-- 无项目提示卡片 -->
+      <view class="empty-project-card" v-if="!activeProject">
+        <text class="empty-icon">📋</text>
+        <text class="empty-title">尚未选择 IP 项目</text>
+        <text class="empty-desc">请先创建或选择一个 IP 项目，以便 AI 更好地理解您的创作需求</text>
+        <button class="create-btn" @tap="goToProjectList">
+          <text>选择项目</text>
+        </button>
       </view>
 
-      <!-- 高级设置 -->
-      <view class="advanced-section" v-if="showAdvanced">
-        <view class="section-title">
-          <text class="title-text">高级设置</text>
+      <!-- 对话消息列表 -->
+      <view 
+        v-for="(msg, index) in chatHistory" 
+        :key="index"
+        class="message-wrapper"
+        :class="msg.role"
+      >
+        <!-- 用户消息 -->
+        <view v-if="msg.role === 'user'" class="message-bubble user-bubble">
+          <text class="bubble-text">{{ msg.content }}</text>
         </view>
-        <view class="setting-item">
-          <text class="setting-label">文案长度</text>
-          <view class="setting-options">
-            <view 
-              v-for="(len, idx) in lengthOptions" 
-              :key="idx"
-              class="option-tag"
-              :class="{ active: maxTokens === len.value }"
-              @tap="maxTokens = len.value"
-            >
-              {{ len.label }}
+        
+        <!-- AI 消息 -->
+        <view v-else-if="msg.role === 'assistant'" class="message-row assistant-row">
+          <view class="ai-avatar">
+            <text class="ai-avatar-icon">{{ currentAgent.icon }}</text>
+          </view>
+          <view class="message-bubble assistant-bubble">
+            <text class="bubble-text">{{ msg.content }}</text>
+            <!-- 复制按钮 -->
+            <view class="bubble-actions">
+              <view class="action-item" @tap="copyMessage(msg.content)">
+                <text class="action-icon">📋</text>
+                <text class="action-label">复制</text>
+              </view>
             </view>
           </view>
         </view>
-        <view class="setting-item">
-          <text class="setting-label">创意程度</text>
-          <slider 
-            class="creativity-slider"
-            :value="temperature * 100"
-            :min="0"
-            :max="100"
-            :step="10"
-            activeColor="#4facfe"
-            backgroundColor="#e0e5ec"
-            block-size="20"
-            @change="onTemperatureChange"
-          />
-          <text class="slider-value">{{ temperatureLabel }}</text>
+
+        <!-- 系统提示消息 (智能体切换等) -->
+        <view v-else-if="msg.role === 'system_hint'" class="system-hint-wrapper">
+          <view class="system-hint-bubble">
+            <text class="hint-text">{{ msg.content }}</text>
+          </view>
         </view>
       </view>
 
-      <!-- 展开/收起高级设置 -->
-      <view class="toggle-advanced" @tap="showAdvanced = !showAdvanced">
-        <text class="toggle-text">{{ showAdvanced ? '收起高级设置' : '展开高级设置' }}</text>
-        <text class="toggle-icon">{{ showAdvanced ? '↑' : '↓' }}</text>
-      </view>
-
-      <!-- 生成结果 -->
-      <view class="result-section" v-if="generatedContent" id="result-area">
-        <view class="section-title">
-          <text class="title-text">生成结果</text>
-          <view class="result-actions">
-            <view class="action-btn" @tap="copyContent">
-              <text class="action-icon">📋</text>
-              <text class="action-text">复制</text>
-            </view>
-            <view class="action-btn" @tap="regenerate">
-              <text class="action-icon">🔄</text>
-              <text class="action-text">重新生成</text>
-            </view>
+      <!-- 加载中状态 -->
+      <view v-if="isGenerating" class="message-wrapper assistant">
+        <view class="message-row assistant-row">
+          <view class="ai-avatar">
+            <text class="ai-avatar-icon">{{ currentAgent.icon }}</text>
           </view>
-        </view>
-        <view class="result-card">
-          <view class="result-header">
-            <text class="result-model">{{ lastUsedModel }}</text>
-            <text class="result-time">{{ generateTime }}</text>
+          <view class="message-bubble assistant-bubble loading-bubble">
+            <view class="typing-indicator">
+              <view class="typing-dot"></view>
+              <view class="typing-dot"></view>
+              <view class="typing-dot"></view>
+            </view>
+            <text class="loading-text">AI 正在思考...</text>
           </view>
-          <text class="result-content">{{ generatedContent }}</text>
         </view>
       </view>
 
       <!-- 底部占位 -->
-      <view class="bottom-spacer"></view>
+      <view class="scroll-bottom-spacer"></view>
     </scroll-view>
 
-    <!-- 底部生成按钮 -->
-    <view class="bottom-bar">
-      <button 
-        class="generate-btn"
-        :class="{ disabled: !canGenerate, loading: isGenerating }"
-        :disabled="!canGenerate || isGenerating"
-        @tap="generateCopywriting"
-      >
-        <view class="btn-content" v-if="!isGenerating">
-          <text class="btn-icon">✨</text>
-          <text class="btn-text">生成文案</text>
-        </view>
-        <view class="btn-content" v-else>
-          <view class="loading-spinner"></view>
-          <text class="btn-text">AI 思考中...</text>
-        </view>
-      </button>
+    <!-- 智能体切换悬浮球 -->
+    <view class="agent-fab" @tap="showAgentPicker">
+      <text class="fab-icon">{{ currentAgent.icon }}</text>
     </view>
 
-    <!-- 悬浮球组件 -->
-    <ModelSwitcher />
+    <!-- 底部输入栏 -->
+    <view class="input-bar">
+      <view class="input-container">
+        <!-- 清空对话按钮 -->
+        <view class="clear-btn" @tap="clearChat">
+          <text class="clear-icon">🗑️</text>
+        </view>
+        
+        <!-- 输入框 -->
+        <view class="input-wrapper">
+          <textarea
+            v-model="inputText"
+            class="chat-input"
+            :placeholder="inputPlaceholder"
+            :maxlength="2000"
+            :auto-height="true"
+            :show-confirm-bar="false"
+            :adjust-position="true"
+            :cursor-spacing="20"
+            @confirm="sendMessage"
+            @linechange="onInputLineChange"
+          />
+        </view>
+        
+        <!-- 发送按钮 -->
+        <view 
+          class="send-btn"
+          :class="{ active: canSend, disabled: !canSend || isGenerating }"
+          @tap="sendMessage"
+        >
+          <text class="send-icon">{{ isGenerating ? '⏳' : '🚀' }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 智能体选择弹窗 -->
+    <view class="agent-modal" v-if="showAgentModal" @tap="showAgentModal = false">
+      <view class="modal-content" @tap.stop>
+        <view class="modal-header">
+          <text class="modal-title">选择智能体</text>
+          <view class="modal-close" @tap="showAgentModal = false">
+            <text>✕</text>
+          </view>
+        </view>
+        <view class="agent-list">
+          <view 
+            v-for="(agent, idx) in agentList" 
+            :key="idx"
+            class="agent-item"
+            :class="{ active: currentAgent.id === agent.id }"
+            @tap="selectAgent(agent)"
+          >
+            <view class="agent-icon-wrap">
+              <text class="agent-icon">{{ agent.icon }}</text>
+            </view>
+            <view class="agent-info">
+              <text class="agent-name">{{ agent.name }}</text>
+              <text class="agent-desc">{{ agent.description }}</text>
+            </view>
+            <view class="agent-check" v-if="currentAgent.id === agent.id">
+              <text>✓</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 模型选择弹窗 -->
+    <view class="model-modal" v-if="showModelModal" @tap="showModelModal = false">
+      <view class="modal-content" @tap.stop>
+        <view class="modal-header">
+          <text class="modal-title">切换 AI 模型</text>
+          <view class="modal-close" @tap="showModelModal = false">
+            <text>✕</text>
+          </view>
+        </view>
+        <view class="model-list">
+          <view 
+            v-for="(model, idx) in availableModels" 
+            :key="idx"
+            class="model-item"
+            :class="{ active: currentModel.type === model.type }"
+            @tap="selectModel(model)"
+          >
+            <text class="model-item-icon">{{ model.icon }}</text>
+            <view class="model-item-info">
+              <text class="model-item-name">{{ model.name }}</text>
+              <text class="model-item-desc">{{ model.description }}</text>
+            </view>
+            <view class="model-check" v-if="currentModel.type === model.type">
+              <text>✓</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import { useSettingsStore } from '@/stores/settings'
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
+import { useSettingsStore, type ModelConfig } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectStore } from '@/stores/project'
-import ModelSwitcher from '@/components/ModelSwitcher.vue'
 
-// 设置 store
+// ============== Store ==============
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
+
 const currentModel = computed(() => settingsStore.currentModel)
+const availableModels = computed(() => settingsStore.availableModels)
 const activeProject = computed(() => projectStore.activeProject)
+const currentPersonaSettings = computed(() => projectStore.currentPersonaSettings)
+
+// ============== 智能体配置 ==============
+interface Agent {
+  id: string
+  name: string
+  icon: string
+  description: string
+  systemPrompt: string
+}
+
+const agentList = reactive<Agent[]>([
+  {
+    id: 'copywriter',
+    name: '高效口播文案智能体',
+    icon: '🎙️',
+    description: '专注于短视频口播文案，节奏感强，适合 TikTok/抖音',
+    systemPrompt: `你是一位专业的短视频口播文案创作专家。你的文案特点：
+1. 开头必须有强烈的钩子，3秒抓住注意力
+2. 节奏感强，适合朗读，句子简短有力
+3. 善用反问、设问增强互动感
+4. 结尾有明确的行动号召（CTA）
+5. 控制在300字以内，适合60秒以内的短视频`
+  },
+  {
+    id: 'xiaohongshu',
+    name: '小红书种草笔记智能体',
+    icon: '📕',
+    description: '小红书爆款笔记风格，真实感强，emoji丰富',
+    systemPrompt: `你是一位小红书头部博主，擅长写种草笔记。你的文案特点：
+1. 标题必须有emoji，吸引点击
+2. 开头用个人真实体验切入，增强可信度
+3. 内容分点清晰，善用emoji分隔
+4. 语气亲和真实，像朋友分享
+5. 适当使用网络热词和流行梗
+6. 结尾设置互动话题，引导评论`
+  },
+  {
+    id: 'marketing',
+    name: '营销转化文案智能体',
+    icon: '💰',
+    description: '高转化营销文案，AIDA模型，刺激购买欲',
+    systemPrompt: `你是一位资深营销文案专家，精通消费心理学。你的文案遵循AIDA模型：
+1. Attention - 用痛点或利益点抓住注意力
+2. Interest - 展示产品独特卖点，引发兴趣
+3. Desire - 描绘使用场景，激发购买欲望
+4. Action - 限时优惠、稀缺性，促使立即行动
+善用数字、对比、社会认同等说服技巧`
+  },
+  {
+    id: 'story',
+    name: '故事叙述智能体',
+    icon: '📖',
+    description: '沉浸式故事内容，情感共鸣，引人入胜',
+    systemPrompt: `你是一位出色的故事讲述者，擅长创作引人入胜的叙事内容。你的特点：
+1. 善于设置悬念和冲突
+2. 人物刻画生动，细节丰富
+3. 情节发展有起伏，节奏把控精准
+4. 善于调动读者情绪，引发共鸣
+5. 结尾富有力量感或启发性`
+  },
+  {
+    id: 'knowledge',
+    name: '知识科普智能体',
+    icon: '🎓',
+    description: '专业知识通俗化，深入浅出，权威可信',
+    systemPrompt: `你是一位知识科普达人，能将复杂专业知识转化为通俗易懂的内容。你的特点：
+1. 用生活化的比喻解释抽象概念
+2. 逻辑清晰，层层递进
+3. 引用权威数据增强可信度
+4. 设置疑问引导思考
+5. 知识点适度，不贪多求全`
+  }
+])
+
+const currentAgent = ref<Agent>(agentList[0])
 
 // ============== 状态定义 ==============
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system_card' | 'system_hint'
+  content: string
+  timestamp: number
+}
 
-// 输入主题
-const inputTopic = ref('')
-
-// 选中的风格
-const selectedStyle = ref('营销')
-
-// 高级设置显示状态
-const showAdvanced = ref(false)
-
-// 最大 token 数
-const maxTokens = ref(1024)
-
-// 温度参数
-const temperature = ref(0.7)
-
-// 生成状态
+const chatHistory = reactive<ChatMessage[]>([])
+const inputText = ref('')
 const isGenerating = ref(false)
-
-// 生成的内容
-const generatedContent = ref('')
-
-// 上次使用的模型
-const lastUsedModel = ref('')
-
-// 生成时间
-const generateTime = ref('')
-
-// 滚动定位
-const scrollIntoView = ref('')
-
-// ============== 配置数据 ==============
-
-// 风格列表
-const styleList = reactive([
-  { label: '营销种草', value: '营销', icon: '🔥' },
-  { label: '知识科普', value: '科普', icon: '📚' },
-  { label: '故事叙述', value: '故事', icon: '📖' },
-  { label: '情感共鸣', value: '情感', icon: '💝' },
-  { label: '幽默搞笑', value: '幽默', icon: '😄' },
-  { label: '专业正式', value: '专业', icon: '💼' }
-])
-
-// 长度选项
-const lengthOptions = reactive([
-  { label: '短文案', value: 512 },
-  { label: '中等', value: 1024 },
-  { label: '长文案', value: 2048 }
-])
+const scrollTop = ref(0)
+const showAgentModal = ref(false)
+const showModelModal = ref(false)
+const ipCardMessage = ref<ChatMessage | null>(null)
 
 // ============== 计算属性 ==============
+const canSend = computed(() => inputText.value.trim().length > 0)
 
-// 是否可以生成
-const canGenerate = computed(() => {
-  return inputTopic.value.trim().length >= 2
-})
-
-// 占位文本
-const placeholderText = computed(() => {
-  const examples: Record<string, string> = {
-    '营销': '例如：一款新上市的智能手表，主打健康监测功能...',
-    '科普': '例如：为什么天空是蓝色的？适合给小朋友讲解...',
-    '故事': '例如：一个关于创业者坚持梦想的励志故事...',
-    '情感': '例如：写给异地恋人的温暖文字...',
-    '幽默': '例如：程序员的日常生活趣事...',
-    '专业': '例如：人工智能在医疗领域的应用前景分析...'
-  }
-  return examples[selectedStyle.value] || '请输入您想要生成的文案主题...'
-})
-
-// 温度标签
-const temperatureLabel = computed(() => {
-  if (temperature.value < 0.3) return '保守'
-  if (temperature.value < 0.6) return '稳定'
-  if (temperature.value < 0.8) return '平衡'
-  return '创意'
+const inputPlaceholder = computed(() => {
+  return `向${currentAgent.value.name}发送创作指令...`
 })
 
 // ============== API 配置 ==============
-
-// 后端 API 地址
 const API_BASE_URL = __API_BASE_URL__
 
 // ============== 方法定义 ==============
@@ -269,99 +368,237 @@ function goBack() {
 }
 
 /**
- * 进入项目控制台
+ * 跳转到项目列表
  */
-function goToProjectDashboard() {
-  uni.navigateTo({ url: '/pages/project/dashboard' })
+function goToProjectList() {
+  uni.navigateTo({ url: '/pages/project/list' })
 }
 
 /**
- * 显示模型信息
+ * 格式化风格标签
  */
-function showModelInfo() {
+function formatStyleTags(tone: string): string {
+  if (!tone) return ''
+  // 如果已经是数组格式的字符串，尝试解析
+  try {
+    const parsed = JSON.parse(tone)
+    if (Array.isArray(parsed)) {
+      return parsed.join(', ')
+    }
+  } catch {
+    // 不是 JSON，直接返回
+  }
+  return tone
+}
+
+/**
+ * 初始化 IP 卡片消息 (Task 1)
+ */
+function initIPCard() {
+  if (activeProject.value) {
+    ipCardMessage.value = {
+      role: 'system_card',
+      content: `🤖 当前智能体：${currentAgent.value.name}\n👤 绑定 IP：${activeProject.value.name}\n🏷️ 风格标签：${formatStyleTags(currentPersonaSettings.value?.tone || '默认')}\n🎯 准备就绪，请告诉我你想拍什么？`,
+      timestamp: Date.now()
+    }
+  }
+}
+
+/**
+ * 显示智能体选择器
+ */
+function showAgentPicker() {
+  showAgentModal.value = true
+}
+
+/**
+ * 选择智能体 (Task 2)
+ */
+function selectAgent(agent: Agent) {
+  if (currentAgent.value.id === agent.id) {
+    showAgentModal.value = false
+    return
+  }
+
+  const previousAgent = currentAgent.value
+  currentAgent.value = agent
+  showAgentModal.value = false
+
+  // 插入系统提示消息，不清除历史记录
+  chatHistory.push({
+    role: 'system_hint',
+    content: `已切换为 [${agent.name}]，接下来的内容将按此风格生成。`,
+    timestamp: Date.now()
+  })
+
+  // 更新 IP 卡片中的智能体信息
+  initIPCard()
+
   uni.showToast({
-    title: `当前使用：${currentModel.value.name}`,
+    title: `已切换到 ${agent.name}`,
+    icon: 'none'
+  })
+
+  scrollToBottom()
+}
+
+/**
+ * 显示模型选择器
+ */
+function showModelPicker() {
+  showModelModal.value = true
+}
+
+/**
+ * 选择模型
+ */
+function selectModel(model: ModelConfig) {
+  settingsStore.setModelType(model.type)
+  showModelModal.value = false
+  uni.showToast({
+    title: `已切换到 ${model.name}`,
     icon: 'none'
   })
 }
 
 /**
- * 温度滑块变化
+ * 清空对话 (Task 3)
+ * 清除除"IP 卡片"外的所有对话
  */
-function onTemperatureChange(e: any) {
-  temperature.value = e.detail.value / 100
+function clearChat() {
+  if (chatHistory.length === 0) {
+    uni.showToast({
+      title: '暂无对话记录',
+      icon: 'none'
+    })
+    return
+  }
+
+  uni.showModal({
+    title: '清空对话',
+    content: '确定要清空当前对话记录吗？IP 档案卡片将保留。',
+    success: (res) => {
+      if (res.confirm) {
+        // 清空聊天历史，但保留 IP 卡片
+        chatHistory.splice(0, chatHistory.length)
+        uni.showToast({
+          title: '对话已清空',
+          icon: 'success'
+        })
+      }
+    }
+  })
 }
 
 /**
- * 生成文案
+ * 滚动到底部
  */
-async function generateCopywriting() {
-  if (!canGenerate.value || isGenerating.value) return
-  
+function scrollToBottom() {
+  nextTick(() => {
+    // 使用一个很大的数值确保滚动到底部
+    scrollTop.value = scrollTop.value === 99999 ? 100000 : 99999
+  })
+}
+
+/**
+ * 滚动到顶部事件
+ */
+function onScrollToUpper() {
+  // 预留：可用于加载历史消息
+}
+
+/**
+ * 输入框行数变化
+ */
+function onInputLineChange() {
+  // 输入框高度变化时的处理
+}
+
+/**
+ * 发送消息 (Task 3)
+ */
+async function sendMessage() {
+  if (!canSend.value || isGenerating.value) return
+
   // 登录检查
   const loggedIn = await authStore.requireLogin()
   if (!loggedIn) return
-  
+
+  const userMessage = inputText.value.trim()
+  inputText.value = ''
+
+  // 添加用户消息
+  chatHistory.push({
+    role: 'user',
+    content: userMessage,
+    timestamp: Date.now()
+  })
+
+  scrollToBottom()
   isGenerating.value = true
-  generatedContent.value = ''
-  
+
   try {
-    // 获取当前选中的模型类型，确保有默认值
-    let modelType = settingsStore.modelType
+    // 构建系统提示词
+    let systemPrompt = currentAgent.value.systemPrompt
     
-    // 验证 modelType，如果无效则使用默认值
-    if (!modelType || typeof modelType !== 'string' || !['deepseek', 'doubao', 'claude'].includes(modelType)) {
-      modelType = 'claude'  // 默认使用 Claude
+    // 注入项目人设上下文
+    const personaContext = projectStore.getPersonaSystemPrompt()
+    if (personaContext) {
+      systemPrompt = `${personaContext}\n\n---\n\n${systemPrompt}`
     }
-    
+
+    // 构建对话历史（只包含 user 和 assistant 消息）
+    const messages = chatHistory
+      .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+      .map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }))
+
+    let modelType = settingsStore.modelType
+    if (!modelType || !['deepseek', 'doubao', 'claude'].includes(modelType)) {
+      modelType = 'claude'
+    }
+
     const requestData = {
-      prompt: `请为以下主题创作一段${selectedStyle.value}风格的文案：\n\n主题：${inputTopic.value}`,
+      prompt: userMessage,
       model_type: modelType,
-      system_prompt: getSystemPrompt(),
-      temperature: temperature.value,
-      max_tokens: maxTokens.value,
+      system_prompt: systemPrompt,
+      temperature: 0.7,
+      max_tokens: 2048,
       stream: false
     }
-    
+
     const response = await new Promise<UniApp.RequestSuccessCallbackResult>((resolve, reject) => {
       uni.request({
         url: `${API_BASE_URL}/api/generate`,
         method: 'POST',
-        header: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 60000, // 60秒超时
+        header: { 'Content-Type': 'application/json' },
+        timeout: 60000,
         data: requestData,
-        success: (res) => {
-          resolve(res)
-        },
-        fail: (err: any) => {
-          reject(new Error(err?.errMsg || 'Network request failed'))
-        }
+        success: resolve,
+        fail: (err: any) => reject(new Error(err?.errMsg || 'Network request failed'))
       })
     })
-    
+
     const result = response.data as any
-    
-    // 检查 HTTP 状态码
+
     if (response.statusCode !== 200) {
-      const errorMsg = result?.detail || result?.error || result?.body_received || `HTTP ${response.statusCode}`
+      const errorMsg = result?.detail || result?.error || `HTTP ${response.statusCode}`
       throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
     }
-    
+
     if (result.success && result.content) {
-      generatedContent.value = result.content
-      lastUsedModel.value = `${currentModel.value.icon} ${currentModel.value.name}`
-      generateTime.value = formatTime(new Date())
-      
-      // 滚动到结果区域
-      setTimeout(() => {
-        scrollIntoView.value = 'result-area'
-      }, 100)
+      chatHistory.push({
+        role: 'assistant',
+        content: result.content,
+        timestamp: Date.now()
+      })
+      scrollToBottom()
     } else {
       throw new Error(result.error || result.detail || '生成失败')
     }
-    
+
   } catch (error: any) {
     console.error('生成失败:', error)
     uni.showToast({
@@ -369,85 +606,24 @@ async function generateCopywriting() {
       icon: 'none',
       duration: 2500
     })
+    // 添加错误消息
+    chatHistory.push({
+      role: 'assistant',
+      content: `❌ 生成失败：${error.message || '请稍后重试'}`,
+      timestamp: Date.now()
+    })
+    scrollToBottom()
   } finally {
     isGenerating.value = false
   }
 }
 
 /**
- * 获取系统提示词
- * 结合选中的风格和当前项目的人设配置
+ * 复制消息
  */
-function getSystemPrompt(): string {
-  const stylePrompts: Record<string, string> = {
-    '营销': `你是一位专业的营销文案创作专家，擅长创作具有吸引力和转化力的种草文案。
-要求：
-1. 内容要有吸引力，能引发用户兴趣
-2. 突出产品/服务的核心卖点和价值
-3. 适当使用情感化表达，建立共鸣
-4. 包含清晰的行动号召（CTA）
-5. 适合在社交媒体传播`,
-    
-    '科普': `你是一位善于知识科普的内容创作者，能将复杂知识转化为通俗易懂的内容。
-要求：
-1. 语言通俗易懂，避免过多专业术语
-2. 逻辑清晰，层层递进
-3. 举例生动形象
-4. 信息准确可靠
-5. 能激发读者的求知欲`,
-    
-    '故事': `你是一位出色的故事讲述者，擅长创作引人入胜的叙事内容。
-要求：
-1. 故事要有吸引人的开头
-2. 情节发展要有起伏
-3. 人物形象要鲜明
-4. 细节描写要生动
-5. 结尾要有力量感或启发性`,
-    
-    '情感': `你是一位善于表达情感的文字创作者，文字温暖而有力量。
-要求：
-1. 情感真挚，能引起共鸣
-2. 文字优美，有诗意
-3. 触动内心，引发思考
-4. 传递正能量和温暖
-5. 避免过于煽情或空洞`,
-    
-    '幽默': `你是一位幽默风趣的内容创作者，善于用轻松的方式表达观点。
-要求：
-1. 风格轻松有趣
-2. 幽默而不低俗
-3. 包含巧妙的梗或反转
-4. 观点鲜明但不尖锐
-5. 让人会心一笑`,
-    
-    '专业': `你是一位严谨的专业内容创作者，擅长撰写高质量的专业文章。
-要求：
-1. 内容专业、准确
-2. 结构清晰、逻辑严密
-3. 论据充分、有说服力
-4. 语言正式、精炼
-5. 体现专业深度和洞察`
-  }
-  
-  let basePrompt = stylePrompts[selectedStyle.value] || stylePrompts['营销']
-  
-  // 注入项目人设上下文
-  const personaContext = projectStore.getPersonaSystemPrompt()
-  if (personaContext) {
-    basePrompt = `${personaContext}\n\n---\n\n${basePrompt}`
-  }
-  
-  return basePrompt
-}
-
-/**
- * 复制内容
- */
-function copyContent() {
-  if (!generatedContent.value) return
-  
+function copyMessage(content: string) {
   uni.setClipboardData({
-    data: generatedContent.value,
+    data: content,
     success: () => {
       uni.showToast({
         title: '已复制到剪贴板',
@@ -457,455 +633,778 @@ function copyContent() {
   })
 }
 
-/**
- * 重新生成
- */
-function regenerate() {
-  generateCopywriting()
-}
+// ============== 生命周期 ==============
+onMounted(() => {
+  // Task 1: 初始化 IP 卡片
+  initIPCard()
+  // 初始化时滚动到底部
+  scrollToBottom()
+})
 
-/**
- * 格式化时间
- */
-function formatTime(date: Date): string {
-  const hours = date.getHours().toString().padStart(2, '0')
-  const minutes = date.getMinutes().toString().padStart(2, '0')
-  return `${hours}:${minutes}`
-}
+// 监听项目变化，更新 IP 卡片
+watch(activeProject, () => {
+  initIPCard()
+}, { immediate: true })
 </script>
 
 <style lang="scss" scoped>
-.copywriting-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f0f4ff 0%, #ffffff 100%);
+// ============== 变量定义 ==============
+$primary-orange: #FF6B35;
+$primary-orange-light: #FF8C5A;
+$accent-blue: #4FACFE;
+$accent-cyan: #00F2FE;
+$bg-dark: #1A1A2E;
+$bg-card: rgba(255, 255, 255, 0.95);
+$text-primary: #1A1A2E;
+$text-secondary: #666;
+$text-muted: #999;
+$border-light: rgba(0, 0, 0, 0.06);
+
+// ============== 页面容器 ==============
+.chat-page {
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(165deg, #F8FAFF 0%, #EEF2FF 50%, #FFF5F0 100%);
 }
 
-// 顶部标题栏
-.page-header {
+// ============== 顶部导航栏 ==============
+.nav-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 32rpx;
-  background: #ffffff;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
-  position: sticky;
-  top: 0;
+  padding: 20rpx 24rpx;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1rpx solid $border-light;
+  position: relative;
   z-index: 100;
-  
-  .header-left {
-    width: 80rpx;
+
+  .nav-left {
+    width: 72rpx;
+    height: 72rpx;
     display: flex;
     align-items: center;
-    
+    justify-content: center;
+
     .back-icon {
-      font-size: 40rpx;
-      color: #333;
-      font-weight: 500;
+      font-size: 56rpx;
+      color: $text-primary;
+      font-weight: 300;
     }
   }
-  
-  .header-center {
+
+  .nav-center {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4rpx;
-  }
-  
-  .header-title {
-    font-size: 34rpx;
-    font-weight: 600;
-    color: #1a1a2e;
-  }
-  
-  .project-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    padding: 4rpx 12rpx;
-    background: #f8faff;
-    border-radius: 16rpx;
-    
-    .indicator-dot {
-      width: 12rpx;
-      height: 12rpx;
-      border-radius: 50%;
+
+    .nav-title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: $text-primary;
     }
-    
-    .indicator-name {
-      font-size: 20rpx;
-      color: #666;
-      max-width: 120rpx;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-  
-  .header-right {
-    width: auto;
-    
-    .model-badge {
+
+    .agent-tag {
       display: flex;
       align-items: center;
       gap: 8rpx;
-      padding: 8rpx 20rpx;
-      background: linear-gradient(135deg, #f0f4ff 0%, #e8f0ff 100%);
-      border-radius: 30rpx;
-      
+      margin-top: 4rpx;
+
+      .tag-dot {
+        width: 12rpx;
+        height: 12rpx;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4CAF50, #8BC34A);
+        animation: pulse 2s infinite;
+      }
+
+      .tag-text {
+        font-size: 22rpx;
+        color: $text-muted;
+      }
+    }
+  }
+
+  .nav-right {
+    .model-chip {
+      display: flex;
+      align-items: center;
+      gap: 8rpx;
+      padding: 12rpx 20rpx;
+      background: linear-gradient(135deg, #F0F4FF 0%, #E8EEFF 100%);
+      border-radius: 32rpx;
+      border: 1rpx solid rgba(79, 172, 254, 0.2);
+
       .model-icon {
         font-size: 28rpx;
       }
-      
-      .model-name {
-        font-size: 22rpx;
-        color: #4facfe;
+
+      .model-text {
+        font-size: 24rpx;
+        color: $accent-blue;
         font-weight: 500;
       }
     }
   }
 }
 
-// 主体内容
-.main-content {
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+// ============== 聊天容器 ==============
+.chat-container {
   flex: 1;
   padding: 24rpx;
+  overflow: hidden;
 }
 
-// 通用 section 样式
-.section-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20rpx;
-  
-  .title-text {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #1a1a2e;
-  }
-  
-  .title-hint {
-    font-size: 22rpx;
-    color: #999;
-  }
-}
+// ============== IP 档案卡片 ==============
+.system-card {
+  background: $bg-card;
+  border-radius: 28rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  border: 2rpx solid transparent;
+  background-clip: padding-box;
+  position: relative;
+  box-shadow: 0 8rpx 32rpx rgba(79, 172, 254, 0.1);
 
-// 风格选择区
-.style-section {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
-  
-  .style-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16rpx;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2rpx;
+    border-radius: 30rpx;
+    background: linear-gradient(135deg, $accent-blue, $accent-cyan, $primary-orange);
+    z-index: -1;
+    opacity: 0.6;
   }
-  
-  .style-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8rpx;
-    padding: 20rpx 12rpx;
-    background: #f8faff;
-    border-radius: 16rpx;
-    border: 2rpx solid transparent;
-    transition: all 0.3s ease;
-    
-    &.active {
-      background: linear-gradient(135deg, #e8f4ff 0%, #dbeeff 100%);
-      border-color: #4facfe;
-      
-      .style-label {
-        color: #4facfe;
-        font-weight: 600;
-      }
-    }
-    
-    &:active {
-      transform: scale(0.96);
-    }
-    
-    .style-icon {
-      font-size: 40rpx;
-    }
-    
-    .style-label {
-      font-size: 24rpx;
-      color: #666;
-    }
-  }
-}
 
-// 输入区域
-.input-section {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
-  
-  .input-wrapper {
-    background: #f8faff;
-    border-radius: 16rpx;
-    padding: 20rpx;
-    border: 2rpx solid #e8f0ff;
-    
-    &:focus-within {
-      border-color: #4facfe;
-      background: #ffffff;
-    }
-  }
-  
-  .topic-input {
-    width: 100%;
-    min-height: 160rpx;
-    font-size: 28rpx;
-    color: #333;
-    line-height: 1.6;
-  }
-  
-  .input-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 12rpx;
-    
-    .char-count {
-      font-size: 22rpx;
-      color: #999;
-    }
-  }
-}
-
-// 高级设置
-.advanced-section {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx;
-  margin-bottom: 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
-  
-  .setting-item {
+  .card-header {
     display: flex;
     align-items: center;
     margin-bottom: 24rpx;
-    
-    &:last-child {
-      margin-bottom: 0;
-    }
-    
-    .setting-label {
-      width: 140rpx;
-      font-size: 26rpx;
-      color: #666;
-    }
-    
-    .setting-options {
+    padding-bottom: 20rpx;
+    border-bottom: 1rpx dashed rgba(0, 0, 0, 0.08);
+
+    .card-avatar {
+      width: 88rpx;
+      height: 88rpx;
+      border-radius: 50%;
       display: flex;
-      gap: 16rpx;
-      flex: 1;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+
+      .avatar-letter {
+        font-size: 40rpx;
+        font-weight: 700;
+        color: #fff;
+      }
     }
-    
-    .option-tag {
-      padding: 12rpx 24rpx;
-      background: #f8faff;
-      border-radius: 30rpx;
-      font-size: 24rpx;
-      color: #666;
-      border: 2rpx solid transparent;
-      
-      &.active {
-        background: linear-gradient(135deg, #e8f4ff 0%, #dbeeff 100%);
-        border-color: #4facfe;
-        color: #4facfe;
+
+    .card-title-group {
+      flex: 1;
+      margin-left: 20rpx;
+
+      .card-title {
+        font-size: 36rpx;
+        font-weight: 700;
+        color: $text-primary;
+        display: block;
+      }
+
+      .card-subtitle {
+        font-size: 24rpx;
+        color: $text-muted;
+        margin-top: 4rpx;
+      }
+    }
+
+    .card-status {
+      display: flex;
+      align-items: center;
+      gap: 8rpx;
+      padding: 8rpx 16rpx;
+      background: rgba(76, 175, 80, 0.1);
+      border-radius: 20rpx;
+
+      .status-pulse {
+        width: 16rpx;
+        height: 16rpx;
+        border-radius: 50%;
+        background: #4CAF50;
+        animation: pulse 2s infinite;
+      }
+
+      .status-text {
+        font-size: 22rpx;
+        color: #4CAF50;
         font-weight: 500;
       }
     }
-    
-    .creativity-slider {
-      flex: 1;
-      margin: 0 20rpx;
+  }
+
+  .card-body {
+    .info-row {
+      display: flex;
+      align-items: center;
+      padding: 16rpx 0;
+
+      .info-label {
+        font-size: 26rpx;
+        color: $text-secondary;
+        width: 180rpx;
+      }
+
+      .info-value {
+        flex: 1;
+        font-size: 26rpx;
+        color: $text-primary;
+        font-weight: 500;
+
+        &.agent-value {
+          color: $primary-orange;
+        }
+      }
     }
-    
-    .slider-value {
-      width: 60rpx;
+  }
+
+  .card-footer {
+    margin-top: 20rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx dashed rgba(0, 0, 0, 0.08);
+
+    .footer-hint {
       font-size: 24rpx;
-      color: #4facfe;
-      text-align: right;
+      color: $text-muted;
+      text-align: center;
+      display: block;
     }
   }
 }
 
-// 展开/收起高级设置
-.toggle-advanced {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  padding: 20rpx;
-  margin-bottom: 24rpx;
-  
-  .toggle-text {
-    font-size: 24rpx;
-    color: #999;
+// ============== 空项目卡片 ==============
+.empty-project-card {
+  background: $bg-card;
+  border-radius: 28rpx;
+  padding: 60rpx 40rpx;
+  margin-bottom: 32rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.06);
+
+  .empty-icon {
+    font-size: 80rpx;
+    display: block;
+    margin-bottom: 24rpx;
   }
-  
-  .toggle-icon {
-    font-size: 24rpx;
-    color: #999;
+
+  .empty-title {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: $text-primary;
+    display: block;
+    margin-bottom: 16rpx;
+  }
+
+  .empty-desc {
+    font-size: 26rpx;
+    color: $text-muted;
+    display: block;
+    margin-bottom: 32rpx;
+    line-height: 1.6;
+  }
+
+  .create-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20rpx 48rpx;
+    background: linear-gradient(135deg, $primary-orange, $primary-orange-light);
+    border-radius: 40rpx;
+    border: none;
+    color: #fff;
+    font-size: 28rpx;
+    font-weight: 500;
+    box-shadow: 0 8rpx 24rpx rgba(255, 107, 53, 0.3);
+
+    &::after {
+      border: none;
+    }
   }
 }
 
-// 结果区域
-.result-section {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
-  
-  .result-actions {
+// ============== 消息气泡 ==============
+.message-wrapper {
+  margin-bottom: 28rpx;
+
+  &.user {
     display: flex;
-    gap: 20rpx;
-    
-    .action-btn {
+    justify-content: flex-end;
+  }
+
+  &.assistant {
+    display: flex;
+    justify-content: flex-start;
+  }
+}
+
+.message-row {
+  display: flex;
+  align-items: flex-start;
+  max-width: 85%;
+
+  &.assistant-row {
+    .ai-avatar {
+      width: 72rpx;
+      height: 72rpx;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667EEA, #764BA2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16rpx;
+      flex-shrink: 0;
+      box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+
+      .ai-avatar-icon {
+        font-size: 36rpx;
+      }
+    }
+  }
+}
+
+.message-bubble {
+  padding: 24rpx 28rpx;
+  border-radius: 24rpx;
+  position: relative;
+
+  .bubble-text {
+    font-size: 28rpx;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+.user-bubble {
+  background: linear-gradient(135deg, $primary-orange, $primary-orange-light);
+  color: #fff;
+  border-bottom-right-radius: 8rpx;
+  max-width: 85%;
+  box-shadow: 0 4rpx 16rpx rgba(255, 107, 53, 0.25);
+}
+
+.assistant-bubble {
+  background: $bg-card;
+  color: $text-primary;
+  border-bottom-left-radius: 8rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+
+  .bubble-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16rpx;
+    padding-top: 12rpx;
+    border-top: 1rpx solid $border-light;
+
+    .action-item {
       display: flex;
       align-items: center;
       gap: 6rpx;
       padding: 8rpx 16rpx;
-      background: #f8faff;
-      border-radius: 20rpx;
-      
-      &:active {
-        background: #e8f0ff;
-      }
-      
+      background: #F5F7FA;
+      border-radius: 16rpx;
+
       .action-icon {
         font-size: 24rpx;
       }
-      
-      .action-text {
+
+      .action-label {
         font-size: 22rpx;
-        color: #666;
+        color: $text-muted;
       }
-    }
-  }
-  
-  .result-card {
-    background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
-    border-radius: 16rpx;
-    padding: 24rpx;
-    border: 1rpx solid #e8f0ff;
-    
-    .result-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 16rpx;
-      padding-bottom: 16rpx;
-      border-bottom: 1rpx dashed #e0e5ec;
-      
-      .result-model {
-        font-size: 22rpx;
-        color: #4facfe;
+
+      &:active {
+        background: #E8ECEF;
       }
-      
-      .result-time {
-        font-size: 22rpx;
-        color: #999;
-      }
-    }
-    
-    .result-content {
-      font-size: 28rpx;
-      color: #333;
-      line-height: 1.8;
-      white-space: pre-wrap;
     }
   }
 }
 
-// 底部占位
-.bottom-spacer {
-  height: 160rpx;
+// ============== 系统提示消息 ==============
+.system-hint-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 24rpx 0;
 }
 
-// 底部生成按钮
-.bottom-bar {
+.system-hint-bubble {
+  background: rgba(0, 0, 0, 0.04);
+  padding: 12rpx 24rpx;
+  border-radius: 20rpx;
+
+  .hint-text {
+    font-size: 24rpx;
+    color: $text-muted;
+  }
+}
+
+.loading-bubble {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 28rpx 32rpx;
+
+  .typing-indicator {
+    display: flex;
+    gap: 8rpx;
+
+    .typing-dot {
+      width: 16rpx;
+      height: 16rpx;
+      border-radius: 50%;
+      background: $accent-blue;
+      animation: typingBounce 1.4s infinite both;
+
+      &:nth-child(1) { animation-delay: 0s; }
+      &:nth-child(2) { animation-delay: 0.2s; }
+      &:nth-child(3) { animation-delay: 0.4s; }
+    }
+  }
+
+  .loading-text {
+    font-size: 26rpx;
+    color: $text-muted;
+  }
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.scroll-bottom-spacer {
+  height: 200rpx;
+}
+
+// ============== 智能体悬浮球 ==============
+.agent-fab {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20rpx 32rpx;
+  right: 32rpx;
+  bottom: calc(180rpx + env(safe-area-inset-bottom));
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667EEA, #764BA2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 32rpx rgba(102, 126, 234, 0.4);
+  z-index: 99;
+  animation: fabFloat 3s ease-in-out infinite;
+
+  .fab-icon {
+    font-size: 48rpx;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes fabFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8rpx); }
+}
+
+// ============== 底部输入栏 ==============
+.input-bar {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 20rpx 24rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 30%);
-  
-  .generate-btn {
-    width: 100%;
-    height: 96rpx;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    border-radius: 48rpx;
+  border-top: 1rpx solid $border-light;
+  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.05);
+
+  .input-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 16rpx;
+  }
+
+  .clear-btn {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    background: #F5F7FA;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8rpx 24rpx rgba(79, 172, 254, 0.35);
-    border: none;
-    
-    &::after {
-      border: none;
+    flex-shrink: 0;
+
+    .clear-icon {
+      font-size: 36rpx;
     }
-    
+
+    &:active {
+      background: #E8ECEF;
+    }
+  }
+
+  .input-wrapper {
+    flex: 1;
+    background: #F5F7FA;
+    border-radius: 40rpx;
+    padding: 20rpx 28rpx;
+    border: 2rpx solid transparent;
+    transition: all 0.3s ease;
+
+    &:focus-within {
+      background: #fff;
+      border-color: $accent-blue;
+      box-shadow: 0 0 0 4rpx rgba(79, 172, 254, 0.1);
+    }
+
+    .chat-input {
+      width: 100%;
+      font-size: 28rpx;
+      color: $text-primary;
+      line-height: 1.5;
+      min-height: 40rpx;
+      max-height: 200rpx;
+    }
+  }
+
+  .send-btn {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    background: #E0E5EC;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+
+    .send-icon {
+      font-size: 36rpx;
+    }
+
+    &.active {
+      background: linear-gradient(135deg, $primary-orange, $primary-orange-light);
+      box-shadow: 0 4rpx 16rpx rgba(255, 107, 53, 0.35);
+    }
+
     &.disabled {
-      background: #e0e5ec;
-      box-shadow: none;
-      
-      .btn-text {
-        color: #999;
-      }
+      opacity: 0.6;
+      pointer-events: none;
     }
-    
-    &.loading {
-      background: linear-gradient(135deg, #a0c8f0 0%, #90e0f0 100%);
-    }
-    
-    &:active:not(.disabled):not(.loading) {
-      transform: scale(0.98);
-      box-shadow: 0 4rpx 16rpx rgba(79, 172, 254, 0.25);
-    }
-    
-    .btn-content {
-      display: flex;
-      align-items: center;
-      gap: 12rpx;
-      
-      .btn-icon {
-        font-size: 36rpx;
-      }
-      
-      .btn-text {
-        font-size: 32rpx;
-        font-weight: 600;
-        color: #ffffff;
-      }
-      
-      .loading-spinner {
-        width: 32rpx;
-        height: 32rpx;
-        border: 4rpx solid rgba(255, 255, 255, 0.3);
-        border-top-color: #ffffff;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
+
+    &:active:not(.disabled) {
+      transform: scale(0.95);
     }
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+// ============== 模态框通用样式 ==============
+.agent-modal,
+.model-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
+
+  .modal-content {
+    width: 100%;
+    max-height: 80vh;
+    background: #fff;
+    border-radius: 32rpx 32rpx 0 0;
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 32rpx;
+    border-bottom: 1rpx solid $border-light;
+
+    .modal-title {
+      font-size: 34rpx;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .modal-close {
+      width: 56rpx;
+      height: 56rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #F5F7FA;
+      border-radius: 50%;
+      font-size: 28rpx;
+      color: $text-muted;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+// ============== 智能体列表 ==============
+.agent-list {
+  padding: 16rpx 24rpx;
+  max-height: 60vh;
+  overflow-y: auto;
+
+  .agent-item {
+    display: flex;
+    align-items: center;
+    padding: 24rpx;
+    border-radius: 20rpx;
+    margin-bottom: 16rpx;
+    background: #F8FAFF;
+    border: 2rpx solid transparent;
+    transition: all 0.2s ease;
+
+    &.active {
+      background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 242, 254, 0.1));
+      border-color: $accent-blue;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    .agent-icon-wrap {
+      width: 80rpx;
+      height: 80rpx;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667EEA, #764BA2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .agent-icon {
+        font-size: 40rpx;
+      }
+    }
+
+    .agent-info {
+      flex: 1;
+      margin-left: 20rpx;
+
+      .agent-name {
+        font-size: 30rpx;
+        font-weight: 600;
+        color: $text-primary;
+        display: block;
+      }
+
+      .agent-desc {
+        font-size: 24rpx;
+        color: $text-muted;
+        margin-top: 6rpx;
+        display: block;
+      }
+    }
+
+    .agent-check {
+      width: 48rpx;
+      height: 48rpx;
+      border-radius: 50%;
+      background: $accent-blue;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28rpx;
+      font-weight: 600;
+    }
+  }
+}
+
+// ============== 模型列表 ==============
+.model-list {
+  padding: 16rpx 24rpx;
+
+  .model-item {
+    display: flex;
+    align-items: center;
+    padding: 28rpx 24rpx;
+    border-radius: 20rpx;
+    margin-bottom: 16rpx;
+    background: #F8FAFF;
+    border: 2rpx solid transparent;
+    transition: all 0.2s ease;
+
+    &.active {
+      background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 242, 254, 0.1));
+      border-color: $accent-blue;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    .model-item-icon {
+      font-size: 48rpx;
+      margin-right: 20rpx;
+    }
+
+    .model-item-info {
+      flex: 1;
+
+      .model-item-name {
+        font-size: 30rpx;
+        font-weight: 600;
+        color: $text-primary;
+        display: block;
+      }
+
+      .model-item-desc {
+        font-size: 24rpx;
+        color: $text-muted;
+        margin-top: 4rpx;
+        display: block;
+      }
+    }
+
+    .model-check {
+      width: 48rpx;
+      height: 48rpx;
+      border-radius: 50%;
+      background: $accent-blue;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28rpx;
+      font-weight: 600;
+    }
   }
 }
 </style>

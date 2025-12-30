@@ -181,31 +181,20 @@ async def analyze_douyin_profile(request: AnalyzeDouyinRequest):
                 "Content-Type": "application/json"
             }
             
-            # Tikhub App V3 API 端点 - 使用稳定的 App 接口
-            api_url = f"https://api.tikhub.io/api/v1/douyin/web/handler_user_profile?sec_user_id={sec_uid}"
+            # Tikhub API 端点 (根据实际 API 文档调整)
+            api_url = f"https://api.tikhub.io/api/v1/douyin/user/info?sec_uid={sec_uid}"
             
             response = await client.get(api_url, headers=headers)
             
             if response.status_code != 200:
                 print(f"[Tikhub] API error: {response.status_code} - {response.text}")
                 # 如果 API 调用失败，回退到 Mock 数据
-                # return await mock_analyze_douyin(url)
+                return await mock_analyze_douyin(url)
             
             data = response.json()
             
-            # 调试：打印返回数据的顶层 keys，便于适配结构变化
-            print(f"[Tikhub] Response keys: {list(data.keys())}")
-            if "data" in data:
-                print(f"[Tikhub] data keys: {list(data.get('data', {}).keys())}")
-            
-            # 解析 Tikhub App V3 返回的数据
-            # App V3 接口返回结构可能是 data -> user 或直接 user
-            raw_data = data.get("data", {})
-            user_info = raw_data.get("user", {}) if isinstance(raw_data, dict) else {}
-            
-            # 兜底：如果 user 为空，尝试直接从 data 获取用户信息
-            if not user_info and isinstance(raw_data, dict):
-                user_info = raw_data
+            # 解析 Tikhub 返回的数据 (根据实际 API 响应结构调整)
+            user_info = data.get("data", {}).get("user", {})
             
             nickname = user_info.get("nickname", "")
             signature = user_info.get("signature", "")
