@@ -1,15 +1,15 @@
 <template>
   <view class="chat-page">
-    <!-- 顶部导航栏 -->
+    <!-- 椤堕儴瀵艰埅鏍?-->
     <view class="nav-header">
       <view class="nav-left" @tap="goBack">
-        <text class="back-icon">‹</text>
+        <text class="back-icon">鈥?/text>
       </view>
       <view class="nav-center">
         <text class="nav-title">{{ currentAgent.name }}</text>
         <view class="agent-tag">
           <text class="tag-dot"></text>
-          <text class="tag-text">AI 创作助手</text>
+          <text class="tag-text">AI 鍒涗綔鍔╂墜</text>
         </view>
       </view>
       <view class="nav-right">
@@ -20,7 +20,7 @@
       </view>
     </view>
 
-    <!-- 聊天消息区域 -->
+    <!-- 鑱婂ぉ娑堟伅鍖哄煙 -->
     <scroll-view 
       class="chat-container"
       scroll-y
@@ -28,7 +28,7 @@
       :scroll-with-animation="true"
       @scrolltoupper="onScrollToUpper"
     >
-      <!-- IP 档案卡片 (系统消息) -->
+      <!-- IP 妗ｆ鍗＄墖 (绯荤粺娑堟伅) -->
       <view class="system-card" v-if="activeProject && ipCardMessage">
         <view class="card-header">
           <view class="card-avatar" :style="{ background: activeProject.avatar_color }">
@@ -36,76 +36,76 @@
           </view>
           <view class="card-title-group">
             <text class="card-title">{{ activeProject.name }}</text>
-            <text class="card-subtitle">IP 档案 · AI 已就位</text>
+            <text class="card-subtitle">IP 妗ｆ 路 AI 宸插氨浣?/text>
           </view>
           <view class="card-status">
             <view class="status-pulse"></view>
-            <text class="status-text">在线</text>
+            <text class="status-text">鍦ㄧ嚎</text>
           </view>
         </view>
         <view class="card-body">
           <view class="info-row">
-            <text class="info-label">🤖 当前智能体</text>
+            <text class="info-label">馃 褰撳墠鏅鸿兘浣?/text>
             <text class="info-value agent-value">{{ currentAgent.name }}</text>
           </view>
           <view class="info-row" v-if="activeProject.industry">
-            <text class="info-label">🏷️ 行业领域</text>
+            <text class="info-label">馃彿锔?琛屼笟棰嗗煙</text>
             <text class="info-value">{{ activeProject.industry }}</text>
           </view>
           <view class="info-row" v-if="currentPersonaSettings.tone">
-            <text class="info-label">🎭 风格标签</text>
+            <text class="info-label">馃幁 椋庢牸鏍囩</text>
             <text class="info-value">{{ formatStyleTags(currentPersonaSettings.tone) }}</text>
           </view>
           <view class="info-row" v-if="currentPersonaSettings.target_audience">
-            <text class="info-label">👥 目标受众</text>
+            <text class="info-label">馃懃 鐩爣鍙椾紬</text>
             <text class="info-value">{{ currentPersonaSettings.target_audience }}</text>
           </view>
         </view>
         <view class="card-footer">
-          <text class="footer-hint">🎯 准备就绪，请告诉我你想拍什么？</text>
+          <text class="footer-hint">馃幆 鍑嗗灏辩华锛岃鍛婅瘔鎴戜綘鎯虫媿浠€涔堬紵</text>
         </view>
       </view>
 
-      <!-- 无项目提示卡片 -->
+      <!-- 鏃犻」鐩彁绀哄崱鐗?-->
       <view class="empty-project-card" v-if="!activeProject">
-        <text class="empty-icon">📋</text>
-        <text class="empty-title">尚未选择 IP 项目</text>
-        <text class="empty-desc">请先创建或选择一个 IP 项目，以便 AI 更好地理解您的创作需求</text>
+        <text class="empty-icon">馃搵</text>
+        <text class="empty-title">灏氭湭閫夋嫨 IP 椤圭洰</text>
+        <text class="empty-desc">璇峰厛鍒涘缓鎴栭€夋嫨涓€涓?IP 椤圭洰锛屼互渚?AI 鏇村ソ鍦扮悊瑙ｆ偍鐨勫垱浣滈渶姹?/text>
         <button class="create-btn" @tap="goToProjectList">
-          <text>选择项目</text>
+          <text>閫夋嫨椤圭洰</text>
         </button>
       </view>
 
-      <!-- 对话消息列表 -->
+      <!-- 瀵硅瘽娑堟伅鍒楄〃 -->
       <view 
         v-for="(msg, index) in chatHistory" 
         :key="index"
         class="message-wrapper"
         :class="msg.role"
       >
-        <!-- 用户消息 -->
+        <!-- 鐢ㄦ埛娑堟伅 -->
         <view v-if="msg.role === 'user'" class="message-bubble user-bubble">
           <text class="bubble-text">{{ msg.content }}</text>
         </view>
         
-        <!-- AI 消息 -->
+        <!-- AI 娑堟伅 -->
         <view v-else-if="msg.role === 'assistant'" class="message-row assistant-row">
           <view class="ai-avatar">
             <text class="ai-avatar-icon">{{ currentAgent.icon }}</text>
           </view>
           <view class="message-bubble assistant-bubble">
             <text class="bubble-text">{{ msg.content }}</text>
-            <!-- 复制按钮 -->
+            <!-- 澶嶅埗鎸夐挳 -->
             <view class="bubble-actions">
               <view class="action-item" @tap="copyMessage(msg.content)">
-                <text class="action-icon">📋</text>
-                <text class="action-label">复制</text>
+                <text class="action-icon">馃搵</text>
+                <text class="action-label">澶嶅埗</text>
               </view>
             </view>
           </view>
         </view>
 
-        <!-- 系统提示消息 (智能体切换等) -->
+        <!-- 绯荤粺鎻愮ず娑堟伅 (鏅鸿兘浣撳垏鎹㈢瓑) -->
         <view v-else-if="msg.role === 'system_hint'" class="system-hint-wrapper">
           <view class="system-hint-bubble">
             <text class="hint-text">{{ msg.content }}</text>
@@ -113,7 +113,7 @@
         </view>
       </view>
 
-      <!-- 加载中状态 -->
+      <!-- 鍔犺浇涓姸鎬?-->
       <view v-if="isGenerating" class="message-wrapper assistant">
         <view class="message-row assistant-row">
           <view class="ai-avatar">
@@ -125,29 +125,29 @@
               <view class="typing-dot"></view>
               <view class="typing-dot"></view>
             </view>
-            <text class="loading-text">AI 正在思考...</text>
+            <text class="loading-text">AI 姝ｅ湪鎬濊€?..</text>
           </view>
         </view>
       </view>
 
-      <!-- 底部占位 -->
+      <!-- 搴曢儴鍗犱綅 -->
       <view class="scroll-bottom-spacer"></view>
     </scroll-view>
 
-    <!-- 智能体切换悬浮球 -->
+    <!-- 鏅鸿兘浣撳垏鎹㈡偓娴悆 -->
     <view class="agent-fab" @tap="showAgentPicker">
       <text class="fab-icon">{{ currentAgent.icon }}</text>
     </view>
 
-    <!-- 底部输入栏 -->
+    <!-- 搴曢儴杈撳叆鏍?-->
     <view class="input-bar">
       <view class="input-container">
-        <!-- 清空对话按钮 -->
+        <!-- 娓呯┖瀵硅瘽鎸夐挳 -->
         <view class="clear-btn" @tap="clearChat">
-          <text class="clear-icon">🗑️</text>
+          <text class="clear-icon">馃棏锔?/text>
         </view>
         
-        <!-- 输入框 -->
+        <!-- 杈撳叆妗?-->
         <view class="input-wrapper">
           <textarea
             v-model="inputText"
@@ -163,24 +163,24 @@
           />
         </view>
         
-        <!-- 发送按钮 -->
+        <!-- 鍙戦€佹寜閽?-->
         <view 
           class="send-btn"
           :class="{ active: canSend, disabled: !canSend || isGenerating }"
           @tap="sendMessage"
         >
-          <text class="send-icon">{{ isGenerating ? '⏳' : '🚀' }}</text>
+          <text class="send-icon">{{ isGenerating ? '鈴? : '馃殌' }}</text>
         </view>
       </view>
     </view>
 
-    <!-- 智能体选择弹窗 -->
+    <!-- 鏅鸿兘浣撻€夋嫨寮圭獥 -->
     <view class="agent-modal" v-if="showAgentModal" @tap="showAgentModal = false">
       <view class="modal-content" @tap.stop>
         <view class="modal-header">
-          <text class="modal-title">选择智能体</text>
+          <text class="modal-title">閫夋嫨鏅鸿兘浣?/text>
           <view class="modal-close" @tap="showAgentModal = false">
-            <text>✕</text>
+            <text>鉁?/text>
           </view>
         </view>
         <view class="agent-list">
@@ -199,20 +199,20 @@
               <text class="agent-desc">{{ agent.description }}</text>
             </view>
             <view class="agent-check" v-if="currentAgent.id === agent.id">
-              <text>✓</text>
+              <text>鉁?/text>
             </view>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 模型选择弹窗 -->
+    <!-- 妯″瀷閫夋嫨寮圭獥 -->
     <view class="model-modal" v-if="showModelModal" @tap="showModelModal = false">
       <view class="modal-content" @tap.stop>
         <view class="modal-header">
-          <text class="modal-title">切换 AI 模型</text>
+          <text class="modal-title">鍒囨崲 AI 妯″瀷</text>
           <view class="modal-close" @tap="showModelModal = false">
-            <text>✕</text>
+            <text>鉁?/text>
           </view>
         </view>
         <view class="model-list">
@@ -229,7 +229,7 @@
               <text class="model-item-desc">{{ model.description }}</text>
             </view>
             <view class="model-check" v-if="currentModel.type === model.type">
-              <text>✓</text>
+              <text>鉁?/text>
             </view>
           </view>
         </view>
@@ -254,7 +254,7 @@ const availableModels = computed(() => settingsStore.availableModels)
 const activeProject = computed(() => projectStore.activeProject)
 const currentPersonaSettings = computed(() => projectStore.currentPersonaSettings)
 
-// ============== 智能体配置 ==============
+// ============== 鏅鸿兘浣撻厤缃?==============
 interface Agent {
   id: string
   name: string
@@ -266,70 +266,59 @@ interface Agent {
 const agentList = reactive<Agent[]>([
   {
     id: 'copywriter',
-    name: '高效口播文案智能体',
-    icon: '🎙️',
-    description: '专注于短视频口播文案，节奏感强，适合 TikTok/抖音',
-    systemPrompt: `你是一位专业的短视频口播文案创作专家。你的文案特点：
-1. 开头必须有强烈的钩子，3秒抓住注意力
-2. 节奏感强，适合朗读，句子简短有力
-3. 善用反问、设问增强互动感
-4. 结尾有明确的行动号召（CTA）
-5. 控制在300字以内，适合60秒以内的短视频`
+    name: '楂樻晥鍙ｆ挱鏂囨鏅鸿兘浣?,
+    icon: '馃帣锔?,
+    description: '涓撴敞浜庣煭瑙嗛鍙ｆ挱鏂囨锛岃妭濂忔劅寮猴紝閫傚悎 TikTok/鎶栭煶',
+    systemPrompt: `浣犳槸涓€浣嶄笓涓氱殑鐭棰戝彛鎾枃妗堝垱浣滀笓瀹躲€備綘鐨勬枃妗堢壒鐐癸細
+1. 寮€澶村繀椤绘湁寮虹儓鐨勯挬瀛愶紝3绉掓姄浣忔敞鎰忓姏
+2. 鑺傚鎰熷己锛岄€傚悎鏈楄锛屽彞瀛愮畝鐭湁鍔?3. 鍠勭敤鍙嶉棶銆佽闂寮轰簰鍔ㄦ劅
+4. 缁撳熬鏈夋槑纭殑琛屽姩鍙峰彫锛圕TA锛?5. 鎺у埗鍦?00瀛椾互鍐咃紝閫傚悎60绉掍互鍐呯殑鐭棰慲
   },
   {
     id: 'xiaohongshu',
-    name: '小红书种草笔记智能体',
-    icon: '📕',
-    description: '小红书爆款笔记风格，真实感强，emoji丰富',
-    systemPrompt: `你是一位小红书头部博主，擅长写种草笔记。你的文案特点：
-1. 标题必须有emoji，吸引点击
-2. 开头用个人真实体验切入，增强可信度
-3. 内容分点清晰，善用emoji分隔
-4. 语气亲和真实，像朋友分享
-5. 适当使用网络热词和流行梗
-6. 结尾设置互动话题，引导评论`
+    name: '灏忕孩涔︾鑽夌瑪璁版櫤鑳戒綋',
+    icon: '馃摃',
+    description: '灏忕孩涔︾垎娆剧瑪璁伴鏍硷紝鐪熷疄鎰熷己锛宔moji涓板瘜',
+    systemPrompt: `浣犳槸涓€浣嶅皬绾功澶撮儴鍗氫富锛屾搮闀垮啓绉嶈崏绗旇銆備綘鐨勬枃妗堢壒鐐癸細
+1. 鏍囬蹇呴』鏈塭moji锛屽惛寮曠偣鍑?2. 寮€澶寸敤涓汉鐪熷疄浣撻獙鍒囧叆锛屽寮哄彲淇″害
+3. 鍐呭鍒嗙偣娓呮櫚锛屽杽鐢╡moji鍒嗛殧
+4. 璇皵浜插拰鐪熷疄锛屽儚鏈嬪弸鍒嗕韩
+5. 閫傚綋浣跨敤缃戠粶鐑瘝鍜屾祦琛屾
+6. 缁撳熬璁剧疆浜掑姩璇濋锛屽紩瀵艰瘎璁篳
   },
   {
     id: 'marketing',
-    name: '营销转化文案智能体',
-    icon: '💰',
-    description: '高转化营销文案，AIDA模型，刺激购买欲',
-    systemPrompt: `你是一位资深营销文案专家，精通消费心理学。你的文案遵循AIDA模型：
-1. Attention - 用痛点或利益点抓住注意力
-2. Interest - 展示产品独特卖点，引发兴趣
-3. Desire - 描绘使用场景，激发购买欲望
-4. Action - 限时优惠、稀缺性，促使立即行动
-善用数字、对比、社会认同等说服技巧`
+    name: '钀ラ攢杞寲鏂囨鏅鸿兘浣?,
+    icon: '馃挵',
+    description: '楂樿浆鍖栬惀閿€鏂囨锛孉IDA妯″瀷锛屽埡婵€璐拱娆?,
+    systemPrompt: `浣犳槸涓€浣嶈祫娣辫惀閿€鏂囨涓撳锛岀簿閫氭秷璐瑰績鐞嗗銆備綘鐨勬枃妗堥伒寰狝IDA妯″瀷锛?1. Attention - 鐢ㄧ棝鐐规垨鍒╃泭鐐规姄浣忔敞鎰忓姏
+2. Interest - 灞曠ず浜у搧鐙壒鍗栫偣锛屽紩鍙戝叴瓒?3. Desire - 鎻忕粯浣跨敤鍦烘櫙锛屾縺鍙戣喘涔版鏈?4. Action - 闄愭椂浼樻儬銆佺█缂烘€э紝淇冧娇绔嬪嵆琛屽姩
+鍠勭敤鏁板瓧銆佸姣斻€佺ぞ浼氳鍚岀瓑璇存湇鎶€宸
   },
   {
     id: 'story',
-    name: '故事叙述智能体',
-    icon: '📖',
-    description: '沉浸式故事内容，情感共鸣，引人入胜',
-    systemPrompt: `你是一位出色的故事讲述者，擅长创作引人入胜的叙事内容。你的特点：
-1. 善于设置悬念和冲突
-2. 人物刻画生动，细节丰富
-3. 情节发展有起伏，节奏把控精准
-4. 善于调动读者情绪，引发共鸣
-5. 结尾富有力量感或启发性`
+    name: '鏁呬簨鍙欒堪鏅鸿兘浣?,
+    icon: '馃摉',
+    description: '娌夋蹈寮忔晠浜嬪唴瀹癸紝鎯呮劅鍏遍福锛屽紩浜哄叆鑳?,
+    systemPrompt: `浣犳槸涓€浣嶅嚭鑹茬殑鏁呬簨璁茶堪鑰咃紝鎿呴暱鍒涗綔寮曚汉鍏ヨ儨鐨勫彊浜嬪唴瀹广€備綘鐨勭壒鐐癸細
+1. 鍠勪簬璁剧疆鎮康鍜屽啿绐?2. 浜虹墿鍒荤敾鐢熷姩锛岀粏鑺備赴瀵?3. 鎯呰妭鍙戝睍鏈夎捣浼忥紝鑺傚鎶婃帶绮惧噯
+4. 鍠勪簬璋冨姩璇昏€呮儏缁紝寮曞彂鍏遍福
+5. 缁撳熬瀵屾湁鍔涢噺鎰熸垨鍚彂鎬
   },
   {
     id: 'knowledge',
-    name: '知识科普智能体',
-    icon: '🎓',
-    description: '专业知识通俗化，深入浅出，权威可信',
-    systemPrompt: `你是一位知识科普达人，能将复杂专业知识转化为通俗易懂的内容。你的特点：
-1. 用生活化的比喻解释抽象概念
-2. 逻辑清晰，层层递进
-3. 引用权威数据增强可信度
-4. 设置疑问引导思考
-5. 知识点适度，不贪多求全`
+    name: '鐭ヨ瘑绉戞櫘鏅鸿兘浣?,
+    icon: '馃帗',
+    description: '涓撲笟鐭ヨ瘑閫氫織鍖栵紝娣卞叆娴呭嚭锛屾潈濞佸彲淇?,
+    systemPrompt: `浣犳槸涓€浣嶇煡璇嗙鏅揪浜猴紝鑳藉皢澶嶆潅涓撲笟鐭ヨ瘑杞寲涓洪€氫織鏄撴噦鐨勫唴瀹广€備綘鐨勭壒鐐癸細
+1. 鐢ㄧ敓娲诲寲鐨勬瘮鍠昏В閲婃娊璞℃蹇?2. 閫昏緫娓呮櫚锛屽眰灞傞€掕繘
+3. 寮曠敤鏉冨▉鏁版嵁澧炲己鍙俊搴?4. 璁剧疆鐤戦棶寮曞鎬濊€?5. 鐭ヨ瘑鐐归€傚害锛屼笉璐姹傚叏`
   }
 ])
 
 const currentAgent = ref<Agent>(agentList[0])
 
-// ============== 状态定义 ==============
+// ============== 鐘舵€佸畾涔?==============
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system_card' | 'system_hint'
   content: string
@@ -344,21 +333,20 @@ const showAgentModal = ref(false)
 const showModelModal = ref(false)
 const ipCardMessage = ref<ChatMessage | null>(null)
 
-// ============== 计算属性 ==============
+// ============== 璁＄畻灞炴€?==============
 const canSend = computed(() => inputText.value.trim().length > 0)
 
 const inputPlaceholder = computed(() => {
-  return `向${currentAgent.value.name}发送创作指令...`
+  return `鍚?{currentAgent.value.name}鍙戦€佸垱浣滄寚浠?..`
 })
 
-// ============== API 配置 ==============
+// ============== API 閰嶇疆 ==============
 const API_BASE_URL = __API_BASE_URL__
 
-// ============== 方法定义 ==============
+// ============== 鏂规硶瀹氫箟 ==============
 
 /**
- * 返回上一页
- */
+ * 杩斿洖涓婁竴椤? */
 function goBack() {
   uni.navigateBack({
     fail: () => {
@@ -368,51 +356,47 @@ function goBack() {
 }
 
 /**
- * 跳转到项目列表
- */
+ * 璺宠浆鍒伴」鐩垪琛? */
 function goToProjectList() {
   uni.navigateTo({ url: '/pages/project/list' })
 }
 
 /**
- * 格式化风格标签
- */
+ * 鏍煎紡鍖栭鏍兼爣绛? */
 function formatStyleTags(tone: string): string {
   if (!tone) return ''
-  // 如果已经是数组格式的字符串，尝试解析
+  // 濡傛灉宸茬粡鏄暟缁勬牸寮忕殑瀛楃涓诧紝灏濊瘯瑙ｆ瀽
   try {
     const parsed = JSON.parse(tone)
     if (Array.isArray(parsed)) {
       return parsed.join(', ')
     }
   } catch {
-    // 不是 JSON，直接返回
-  }
+    // 涓嶆槸 JSON锛岀洿鎺ヨ繑鍥?  }
   return tone
 }
 
 /**
- * 初始化 IP 卡片消息 (Task 1)
+ * 鍒濆鍖?IP 鍗＄墖娑堟伅 (Task 1)
  */
 function initIPCard() {
   if (activeProject.value) {
     ipCardMessage.value = {
       role: 'system_card',
-      content: `🤖 当前智能体：${currentAgent.value.name}\n👤 绑定 IP：${activeProject.value.name}\n🏷️ 风格标签：${formatStyleTags(currentPersonaSettings.value?.tone || '默认')}\n🎯 准备就绪，请告诉我你想拍什么？`,
+      content: `馃 褰撳墠鏅鸿兘浣擄細${currentAgent.value.name}\n馃懁 缁戝畾 IP锛?{activeProject.value.name}\n馃彿锔?椋庢牸鏍囩锛?{formatStyleTags(currentPersonaSettings.value?.tone || '榛樿')}\n馃幆 鍑嗗灏辩华锛岃鍛婅瘔鎴戜綘鎯虫媿浠€涔堬紵`,
       timestamp: Date.now()
     }
   }
 }
 
 /**
- * 显示智能体选择器
- */
+ * 鏄剧ず鏅鸿兘浣撻€夋嫨鍣? */
 function showAgentPicker() {
   showAgentModal.value = true
 }
 
 /**
- * 选择智能体 (Task 2)
+ * 閫夋嫨鏅鸿兘浣?(Task 2)
  */
 function selectAgent(agent: Agent) {
   if (currentAgent.value.id === agent.id) {
@@ -424,18 +408,17 @@ function selectAgent(agent: Agent) {
   currentAgent.value = agent
   showAgentModal.value = false
 
-  // 插入系统提示消息，不清除历史记录
+  // 鎻掑叆绯荤粺鎻愮ず娑堟伅锛屼笉娓呴櫎鍘嗗彶璁板綍
   chatHistory.push({
     role: 'system_hint',
-    content: `已切换为 [${agent.name}]，接下来的内容将按此风格生成。`,
+    content: `宸插垏鎹负 [${agent.name}]锛屾帴涓嬫潵鐨勫唴瀹瑰皢鎸夋椋庢牸鐢熸垚銆俙,
     timestamp: Date.now()
   })
 
-  // 更新 IP 卡片中的智能体信息
-  initIPCard()
+  // 鏇存柊 IP 鍗＄墖涓殑鏅鸿兘浣撲俊鎭?  initIPCard()
 
   uni.showToast({
-    title: `已切换到 ${agent.name}`,
+    title: `宸插垏鎹㈠埌 ${agent.name}`,
     icon: 'none'
   })
 
@@ -443,46 +426,44 @@ function selectAgent(agent: Agent) {
 }
 
 /**
- * 显示模型选择器
- */
+ * 鏄剧ず妯″瀷閫夋嫨鍣? */
 function showModelPicker() {
   showModelModal.value = true
 }
 
 /**
- * 选择模型
+ * 閫夋嫨妯″瀷
  */
 function selectModel(model: ModelConfig) {
   settingsStore.setModelType(model.type)
   showModelModal.value = false
   uni.showToast({
-    title: `已切换到 ${model.name}`,
+    title: `宸插垏鎹㈠埌 ${model.name}`,
     icon: 'none'
   })
 }
 
 /**
- * 清空对话 (Task 3)
- * 清除除"IP 卡片"外的所有对话
- */
+ * 娓呯┖瀵硅瘽 (Task 3)
+ * 娓呴櫎闄?IP 鍗＄墖"澶栫殑鎵€鏈夊璇? */
 function clearChat() {
   if (chatHistory.length === 0) {
     uni.showToast({
-      title: '暂无对话记录',
+      title: '鏆傛棤瀵硅瘽璁板綍',
       icon: 'none'
     })
     return
   }
 
   uni.showModal({
-    title: '清空对话',
-    content: '确定要清空当前对话记录吗？IP 档案卡片将保留。',
+    title: '娓呯┖瀵硅瘽',
+    content: '纭畾瑕佹竻绌哄綋鍓嶅璇濊褰曞悧锛烮P 妗ｆ鍗＄墖灏嗕繚鐣欍€?,
     success: (res) => {
       if (res.confirm) {
-        // 清空聊天历史，但保留 IP 卡片
+        // 娓呯┖鑱婂ぉ鍘嗗彶锛屼絾淇濈暀 IP 鍗＄墖
         chatHistory.splice(0, chatHistory.length)
         uni.showToast({
-          title: '对话已清空',
+          title: '瀵硅瘽宸叉竻绌?,
           icon: 'success'
         })
       }
@@ -491,45 +472,38 @@ function clearChat() {
 }
 
 /**
- * 滚动到底部
- */
+ * 婊氬姩鍒板簳閮? */
 function scrollToBottom() {
   nextTick(() => {
-    setTimeout(() => {
-      // 使用一个很大的数值确保滚动到底部
-      scrollTop.value = scrollTop.value === 99999 ? 100000 : 99999
-    }, 300)
+    // 浣跨敤涓€涓緢澶х殑鏁板€肩‘淇濇粴鍔ㄥ埌搴曢儴
+    scrollTop.value = scrollTop.value === 99999 ? 100000 : 99999
   })
 }
 
 /**
- * 滚动到顶部事件
- */
+ * 婊氬姩鍒伴《閮ㄤ簨浠? */
 function onScrollToUpper() {
-  // 预留：可用于加载历史消息
+  // 棰勭暀锛氬彲鐢ㄤ簬鍔犺浇鍘嗗彶娑堟伅
 }
 
 /**
- * 输入框行数变化
- */
+ * 杈撳叆妗嗚鏁板彉鍖? */
 function onInputLineChange() {
-  // 输入框高度变化时的处理
-}
+  // 杈撳叆妗嗛珮搴﹀彉鍖栨椂鐨勫鐞?}
 
 /**
- * 发送消息 (Task 3)
+ * 鍙戦€佹秷鎭?(Task 3)
  */
 async function sendMessage() {
   if (!canSend.value || isGenerating.value) return
 
-  // 登录检查
-  const loggedIn = await authStore.requireLogin()
+  // 鐧诲綍妫€鏌?  const loggedIn = await authStore.requireLogin()
   if (!loggedIn) return
 
   const userMessage = inputText.value.trim()
   inputText.value = ''
 
-  // 添加用户消息
+  // 娣诲姞鐢ㄦ埛娑堟伅
   chatHistory.push({
     role: 'user',
     content: userMessage,
@@ -540,17 +514,14 @@ async function sendMessage() {
   isGenerating.value = true
 
   try {
-    // 构建系统提示词
-    let systemPrompt = currentAgent.value.systemPrompt
+    // 鏋勫缓绯荤粺鎻愮ず璇?    let systemPrompt = currentAgent.value.systemPrompt
     
-    // 注入项目人设上下文
-    const personaContext = projectStore.getPersonaSystemPrompt()
+    // 娉ㄥ叆椤圭洰浜鸿涓婁笅鏂?    const personaContext = projectStore.getPersonaSystemPrompt()
     if (personaContext) {
       systemPrompt = `${personaContext}\n\n---\n\n${systemPrompt}`
     }
 
-    // 构建对话历史（只包含 user 和 assistant 消息）
-    const messages = chatHistory
+    // 鏋勫缓瀵硅瘽鍘嗗彶锛堝彧鍖呭惈 user 鍜?assistant 娑堟伅锛?    const messages = chatHistory
       .filter(msg => msg.role === 'user' || msg.role === 'assistant')
       .map(msg => ({
         role: msg.role,
@@ -559,7 +530,7 @@ async function sendMessage() {
 
     let modelType = settingsStore.modelType
     if (!modelType || !['deepseek', 'doubao', 'claude'].includes(modelType)) {
-      modelType = 'doubao'  // 默认使用豆包（节省API成本）
+      modelType = 'claude'
     }
 
     const requestData = {
@@ -598,20 +569,20 @@ async function sendMessage() {
       })
       scrollToBottom()
     } else {
-      throw new Error(result.error || result.detail || '生成失败')
+      throw new Error(result.error || result.detail || '鐢熸垚澶辫触')
     }
 
   } catch (error: any) {
-    console.error('生成失败:', error)
+    console.error('鐢熸垚澶辫触:', error)
     uni.showToast({
-      title: error.message || '生成失败，请稍后重试',
+      title: error.message || '鐢熸垚澶辫触锛岃绋嶅悗閲嶈瘯',
       icon: 'none',
       duration: 2500
     })
-    // 添加错误消息
+    // 娣诲姞閿欒娑堟伅
     chatHistory.push({
       role: 'assistant',
-      content: `❌ 生成失败：${error.message || '请稍后重试'}`,
+      content: `鉂?鐢熸垚澶辫触锛?{error.message || '璇风◢鍚庨噸璇?}`,
       timestamp: Date.now()
     })
     scrollToBottom()
@@ -621,36 +592,35 @@ async function sendMessage() {
 }
 
 /**
- * 复制消息
+ * 澶嶅埗娑堟伅
  */
 function copyMessage(content: string) {
   uni.setClipboardData({
     data: content,
     success: () => {
       uni.showToast({
-        title: '已复制到剪贴板',
+        title: '宸插鍒跺埌鍓创鏉?,
         icon: 'success'
       })
     }
   })
 }
 
-// ============== 生命周期 ==============
+// ============== 鐢熷懡鍛ㄦ湡 ==============
 onMounted(() => {
-  // Task 1: 初始化 IP 卡片
+  // Task 1: 鍒濆鍖?IP 鍗＄墖
   initIPCard()
-  // 初始化时滚动到底部
-  scrollToBottom()
+  // 鍒濆鍖栨椂婊氬姩鍒板簳閮?  scrollToBottom()
 })
 
-// 监听项目变化，更新 IP 卡片
+// 鐩戝惉椤圭洰鍙樺寲锛屾洿鏂?IP 鍗＄墖
 watch(activeProject, () => {
   initIPCard()
 }, { immediate: true })
 </script>
 
 <style lang="scss" scoped>
-// ============== 变量定义 ==============
+// ============== 鍙橀噺瀹氫箟 ==============
 $primary-orange: #FF6B35;
 $primary-orange-light: #FF8C5A;
 $accent-blue: #4FACFE;
@@ -662,7 +632,7 @@ $text-secondary: #666;
 $text-muted: #999;
 $border-light: rgba(0, 0, 0, 0.06);
 
-// ============== 页面容器 ==============
+// ============== 椤甸潰瀹瑰櫒 ==============
 .chat-page {
   display: flex;
   flex-direction: column;
@@ -670,7 +640,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   background: linear-gradient(165deg, #F8FAFF 0%, #EEF2FF 50%, #FFF5F0 100%);
 }
 
-// ============== 顶部导航栏 ==============
+// ============== 椤堕儴瀵艰埅鏍?==============
 .nav-header {
   display: flex;
   align-items: center;
@@ -757,15 +727,14 @@ $border-light: rgba(0, 0, 0, 0.06);
   50% { opacity: 0.6; transform: scale(0.9); }
 }
 
-// ============== 聊天容器 ==============
+// ============== 鑱婂ぉ瀹瑰櫒 ==============
 .chat-container {
   flex: 1;
-  height: 0; // 配合 flex: 1 使用，确保 scroll-view 有明确高度
   padding: 24rpx;
   overflow: hidden;
 }
 
-// ============== IP 档案卡片 ==============
+// ============== IP 妗ｆ鍗＄墖 ==============
 .system-card {
   background: $bg-card;
   border-radius: 28rpx;
@@ -890,7 +859,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   }
 }
 
-// ============== 空项目卡片 ==============
+// ============== 绌洪」鐩崱鐗?==============
 .empty-project-card {
   background: $bg-card;
   border-radius: 28rpx;
@@ -940,7 +909,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   }
 }
 
-// ============== 消息气泡 ==============
+// ============== 娑堟伅姘旀场 ==============
 .message-wrapper {
   margin-bottom: 28rpx;
 
@@ -1038,7 +1007,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   }
 }
 
-// ============== 系统提示消息 ==============
+// ============== 绯荤粺鎻愮ず娑堟伅 ==============
 .system-hint-wrapper {
   display: flex;
   justify-content: center;
@@ -1100,7 +1069,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   height: 200rpx;
 }
 
-// ============== 智能体悬浮球 ==============
+// ============== 鏅鸿兘浣撴偓娴悆 ==============
 .agent-fab {
   position: fixed;
   right: 32rpx;
@@ -1130,7 +1099,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   50% { transform: translateY(-8rpx); }
 }
 
-// ============== 底部输入栏 ==============
+// ============== 搴曢儴杈撳叆鏍?==============
 .input-bar {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -1219,7 +1188,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   }
 }
 
-// ============== 模态框通用样式 ==============
+// ============== 妯℃€佹閫氱敤鏍峰紡 ==============
 .agent-modal,
 .model-modal {
   position: fixed;
@@ -1277,7 +1246,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   to { transform: translateY(0); }
 }
 
-// ============== 智能体列表 ==============
+// ============== 鏅鸿兘浣撳垪琛?==============
 .agent-list {
   padding: 16rpx 24rpx;
   max-height: 60vh;
@@ -1350,7 +1319,7 @@ $border-light: rgba(0, 0, 0, 0.06);
   }
 }
 
-// ============== 模型列表 ==============
+// ============== 妯″瀷鍒楄〃 ==============
 .model-list {
   padding: 16rpx 24rpx;
 
