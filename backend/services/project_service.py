@@ -14,11 +14,8 @@ from pathlib import Path
 from models.project import Project, ProjectCreate, ProjectUpdate, PersonaSettings
 
 
-# 数据库文件路径 - 指向项目根目录的 database 文件夹
-DB_PATH = Path(__file__).parent.parent.parent / "database" / "projects.db"
-
-# 确保 database 目录存在
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+# 数据库文件路径
+DB_PATH = Path(__file__).parent.parent / "projects.db"
 
 
 def get_db_connection():
