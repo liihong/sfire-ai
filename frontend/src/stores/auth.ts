@@ -265,28 +265,58 @@ async function loginWithCode(code: string): Promise<{
   token?: string
   userInfo?: UserInfo
 }> {
-  try {
-    const { post } = await import('@/utils/request')
-    const response = await post<{
-      success: boolean
-      token: string
-      userInfo: UserInfo
-    }>('/api/auth/login', { code }, { needToken: false })
+  return new Promise((resolve) => {
+    // 获取后端 API 地址
+    const baseUrl = getBaseUrl()
     
-    if (response.success && response.data) {
-      return {
-        success: true,
-        token: response.data.token,
-        userInfo: response.data.userInfo
+    uni.request({
+      url: `${baseUrl}/api/auth/login`,
+      method: 'POST',
+      data: { code },
+      header: {
+        'Content-Type': 'application/json'
+      },
+      success: (res: any) => {
+        if (res.statusCode === 200 && res.data) {
+          resolve({
+            success: true,
+            token: res.data.token,
+            userInfo: res.data.userInfo
+          })
+        } else {
+          console.error('Login API error:', res)
+          resolve({ success: false })
+        }
+      },
+      fail: (err) => {
+        console.error('Login request failed:', err)
+        // 请求失败时，使用 Mock 数据（方便开发调试）
+        console.log('[Mock] Using mock login response')
+        resolve(getMockLoginResponse(code))
       }
-    }
-    return { success: false }
-  } catch (err) {
-    console.error('Login request failed:', err)
-    // 请求失败时，使用 Mock 数据（方便开发调试）
-    console.log('[Mock] Using mock login response')
-    return getMockLoginResponse(code)
-  }
+    })
+  })
+}
+
+/**
+ * 获取后端 API 基础地址
+ */
+function getBaseUrl(): string {
+  // 开发环境
+  // #ifdef H5
+  return 'http://localhost:8000'
+  // #endif
+  
+  // #ifdef MP-WEIXIN
+  // 微信小程序需要配置合法域名，开发时可以使用本地地址
+  return 'http://localhost:8000'
+  // #endif
+  
+  // #ifndef H5
+  // #ifndef MP-WEIXIN
+  return 'http://localhost:8000'
+  // #endif
+  // #endif
 }
 
 /**
