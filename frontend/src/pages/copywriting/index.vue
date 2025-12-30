@@ -243,6 +243,8 @@ import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useSettingsStore, type ModelConfig } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectStore } from '@/stores/project'
+import { generateApi } from '@/utils/request'
+import { getValidModelType, goBack as goBackUtil } from '@/utils/common'
 
 // ============== Store ==============
 const settingsStore = useSettingsStore()
@@ -351,20 +353,13 @@ const inputPlaceholder = computed(() => {
   return `向${currentAgent.value.name}发送创作指令...`
 })
 
-// ============== API 配置 ==============
-const API_BASE_URL = __API_BASE_URL__
-
 // ============== 方法定义 ==============
 
 /**
  * 返回上一页
  */
 function goBack() {
-  uni.navigateBack({
-    fail: () => {
-      uni.switchTab({ url: '/pages/index/index' })
-    }
-  })
+  goBackUtil()
 }
 
 /**
@@ -495,10 +490,8 @@ function clearChat() {
  */
 function scrollToBottom() {
   nextTick(() => {
-    setTimeout(() => {
-      // 使用一个很大的数值确保滚动到底部
-      scrollTop.value = scrollTop.value === 99999 ? 100000 : 99999
-    }, 300)
+    // 使用一个很大的数值确保滚动到底部
+    scrollTop.value = scrollTop.value === 99999 ? 100000 : 99999
   })
 }
 
@@ -557,48 +550,26 @@ async function sendMessage() {
         content: msg.content
       }))
 
-    let modelType = settingsStore.modelType
-    if (!modelType || !['deepseek', 'doubao', 'claude'].includes(modelType)) {
-      modelType = 'doubao'  // 默认使用豆包（节省API成本）
-    }
+    const modelType = getValidModelType(settingsStore.modelType, 'doubao')
 
-    const requestData = {
+    const response = await generateApi.generate({
       prompt: userMessage,
       model_type: modelType,
       system_prompt: systemPrompt,
       temperature: 0.7,
       max_tokens: 2048,
       stream: false
-    }
-
-    const response = await new Promise<UniApp.RequestSuccessCallbackResult>((resolve, reject) => {
-      uni.request({
-        url: `${API_BASE_URL}/api/generate`,
-        method: 'POST',
-        header: { 'Content-Type': 'application/json' },
-        timeout: 60000,
-        data: requestData,
-        success: resolve,
-        fail: (err: any) => reject(new Error(err?.errMsg || 'Network request failed'))
-      })
     })
 
-    const result = response.data as any
-
-    if (response.statusCode !== 200) {
-      const errorMsg = result?.detail || result?.error || `HTTP ${response.statusCode}`
-      throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
-    }
-
-    if (result.success && result.content) {
+    if (response.success && response.data?.content) {
       chatHistory.push({
         role: 'assistant',
-        content: result.content,
+        content: response.data.content,
         timestamp: Date.now()
       })
       scrollToBottom()
     } else {
-      throw new Error(result.error || result.detail || '生成失败')
+      throw new Error(response.message || '生成失败')
     }
 
   } catch (error: any) {
@@ -760,7 +731,6 @@ $border-light: rgba(0, 0, 0, 0.06);
 // ============== 聊天容器 ==============
 .chat-container {
   flex: 1;
-  height: 0; // 配合 flex: 1 使用，确保 scroll-view 有明确高度
   padding: 24rpx;
   overflow: hidden;
 }
@@ -1411,4 +1381,5 @@ $border-light: rgba(0, 0, 0, 0.06);
   }
 }
 </style>
+
 
